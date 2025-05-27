@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profile{% endblock title %}
+
+{% block main %}
+<div class="container-fluid">
+    <h3 class="text-dark mb-4">Profile</h3>
+    <div class="row mb-3">
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-body text-center shadow">
+                    <img class="rounded-circle mb-3 mt-4" src="{% static 'assets/img/avatars/avatar1.jpeg' %}" width="160" height="160">
+                    <div class="mb-3">
+                        <button class="btn btn-primary btn-sm" type="button" disabled>Change Photo (Tạm khóa)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="row">
+                <div class="col">
+                    <div class="card shadow mb-3">
+                        <div class="card-header py-3">
+                            <p class="fw-bold text-primary m-0">Change Profile</p>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{% url 'update_profile' %}" id="profile-form">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="username"><strong>Tên đăng nhập</strong></label>
+                                            <input class="form-control" type="text" id="username" name="username" value="{{ user.username }}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="password"><strong>Mật khẩu mới</strong></label>
+                                            <input class="form-control" type="password" id="password" name="password" placeholder="Để trống nếu không đổi">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xl-6">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="email"><strong>Email</strong></label>
+                                            <input class="form-control" type="email" id="email" name="email" value="{{ user.email }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-6">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="name"><strong>Họ và tên</strong></label>
+                                            <input class="form-control" type="text" id="name" name="name" value="{{ user.last_name|default:user.username }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <button class="btn btn-primary btn-sm" type="submit">Lưu thay đổi</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    async function createSHA256Hash(input) {
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(input);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        } catch (error) {
+            console.error('Error in createSHA256Hash:', error);
+            return '';
+        }
+    }
+
+    document.getElementById('profile-form').addEventListener('submit', async function(event) {
+        event.preventDefault(); 
+
+        const passwordInput = document.getElementById('password');
+        const password = passwordInput.value;
+
+        if (password) {
+            const hashedPassword = await createSHA256Hash(password);
+            if (hashedPassword) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'hashed_password';
+                hiddenInput.value = hashedPassword;
+                this.appendChild(hiddenInput);
+
+                passwordInput.value = '';
+            } else {
+                alert('Không thể mã hóa mật khẩu. Vui lòng thử lại.');
+                return;
+            }
+        }
+
+        this.submit();
+    });
+</script>
+{% endblock main %}

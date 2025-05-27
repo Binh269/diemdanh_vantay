@@ -1,0 +1,1093 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block main %}
+<style>
+    .container-fluid {
+        padding: 20px;
+        max-width: 100%;
+    }
+
+    h3 {
+        text-align: center;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .button_tkb {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        margin: 5px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .button_tkb:hover {
+        background-color: #0056b3;
+    }
+
+    input[type="file"] {
+        display: block;
+        margin: 10px 0;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    #saveToDB {
+        background-color: #28a745;
+        cursor: not-allowed;
+    }
+
+    .data_tkb {
+        margin-top: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-width: 100%;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .table-tkb {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+    .table-tkb th, .table-tkb td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+        word-break: break-word; /* Ngăn chữ bị khuất */
+    }
+
+    .table-tkb th {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .table-tkb tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    .tkb-row:hover {
+        background-color: #e9ecef;
+        transition: background 0.3s;
+    }
+
+    .button-group {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 10px;
+        align-items: center;
+        margin: 0px 30px 15px 0px;
+        justify-content: flex-end;
+    }
+
+    .button-group input[type="file"] {
+        margin: 0px 30px;
+        padding: 6px;
+        border-radius: 10px;
+        border: 3px solid #28a745;
+    }
+
+    .button-group #saveToDB {
+        background-color: #28a745;
+        cursor: pointer; /* Bỏ cursor not-allowed để nút hoạt động */
+    }
+
+    .button-group #saveToDB:hover {
+        background-color: #218838;
+    }
+
+    #formModal {
+        z-index: 1000; /* Đảm bảo modal nằm trên các phần khác */
+        width: 90%;
+        max-width: 400px; /* Giới hạn chiều rộng tối đa */
+    }
+
+    #formModal form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* Khoảng cách giữa các trường */
+    }
+
+    #formModal label {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    #formModal input[type="text"] {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #formModal .button_tkb {
+        width: 100%;
+        max-width: 120px;
+        align-self: center; 
+    }
+
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+
+    .notification.success {
+        background-color: #28a745;
+    }
+
+    .notification.error {
+        background-color: #dc3545;
+    }
+
+    .notification.show {
+        opacity: 1;
+    }
+    #dsSvModal, #formSvModal {
+        pointer-events: auto; 
+    }
+
+    .week-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 20px 0;
+    }
+
+    .week-nav button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .week-nav button:hover {
+        background-color: #0056b3;
+    }
+
+    .week-dates {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    .table-tkb th {
+        min-width: 120px;
+    }
+
+    .table-tkb td {
+        vertical-align: middle;
+        height: 70px;
+    }
+    #dsSvModal .table-container {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    @media (max-width: 1200px) { /* Desktop nhỏ */
+        .table-tkb th, .table-tkb td {
+            padding: 8px;
+            font-size: 0.95rem;
+        }
+        .button_tkb {
+            padding: 7px 10px;
+            font-size: 0.95rem;
+        }
+    }
+
+    @media (max-width: 1024px) { /* Tablet lớn */
+        .table-tkb th, .table-tkb td {
+            padding: 7px;
+            font-size: 0.9rem;
+        }
+        .button_tkb {
+            padding: 6px 9px;
+            font-size: 0.9rem;
+        }
+    }
+
+    @media (max-width: 768px) { /* Tablet nhỏ/Mobile lớn */
+        .container-fluid {
+            padding: 15px;
+        }
+        h3 {
+            font-size: 1.8rem;
+        }
+        .button_tkb {
+            padding: 6px 10px;
+            font-size: 0.9rem;
+            margin: 5px 2px;
+            width: auto; /* Đảm bảo nút không quá rộng */
+        }
+        .table-tkb th, .table-tkb td {
+            padding: 6px;
+            font-size: 0.85rem;
+        }
+        input[type="file"] {
+            max-width: 250px;
+        }
+        .data_tkb {
+            padding: 10px;
+        }
+    }
+
+    @media (max-width: 576px) { /* Mobile trung bình */
+        h3 {
+            font-size: 1.5rem;
+        }
+        .button_tkb {
+            padding: 5px 8px;
+            font-size: 0.8rem;
+            width: 100%; /* Nút trải dài trên mobile */
+            max-width: 120px;
+        }
+        .table-tkb th, .table-tkb td {
+            padding: 4px;
+            font-size: 0.75rem;
+        }
+        input[type="file"] {
+            max-width: 200px;
+        }
+    }
+
+    @media (max-width: 414px) { /* Mobile nhỏ (iPhone X) */
+        h3 {
+            font-size: 1.3rem;
+        }
+        .button_tkb {
+            padding: 4px 6px;
+            font-size: 0.75rem;
+            max-width: 100px;
+        }
+        .table-tkb th, .table-tkb td {
+            padding: 3px;
+            font-size: 0.7rem;
+        }
+        .data_tkb {
+            padding: 8px;
+        }
+    }
+
+    @media (max-width: 360px) { /* Mobile rất nhỏ (Galaxy S5) */
+        h3 {
+            font-size: 1.2rem;
+        }
+        .button_tkb {
+            padding: 4px 5px;
+            font-size: 0.7rem;
+            max-width: 90px;
+        }
+        .table-tkb th, .table-tkb td {
+            padding: 2px;
+            font-size: 0.65rem;
+        }
+        input[type="file"] {
+            max-width: 180px;
+        }
+    }
+
+    @media (max-width: 320px) { /* Mobile siêu nhỏ (iPhone 5) */
+        h3 {
+            font-size: 1.1rem;
+        }
+        .button_tkb {
+            padding: 3px 4px;
+            font-size: 0.65rem;
+            max-width: 80px;
+        }
+        .table-tkb th, .table-tkb td {
+            padding: 2px;
+            font-size: 0.6rem;
+        }
+        .data_tkb {
+            padding: 5px;
+        }
+    }
+
+
+
+    .week-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 20px 0;
+    }
+
+    .week-nav button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .week-nav button:hover {
+        background-color: #0056b3;
+    }
+
+    .week-dates {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    .table-tkb th {
+        min-width: 120px;
+    }
+
+    .table-tkb td {
+        vertical-align: middle;
+        height: 70px;
+    }
+</style>
+
+<div class="container-fluid">
+    <h3 class="text-dark mb-4">Lịch Lớp Học Và Danh Sách Sinh Viên</h3>
+    
+    <div class="week-nav">
+        <button onclick="changeWeek(-1)">Tuần trước</button>
+        <span class="week-dates" id="weekDates"></span>
+        <button onclick="changeWeek(1)">Tuần sau</button>
+    </div>
+
+    <div class="button-group">
+        <button id="exportExcel" class="button_tkb" onclick="exportExcel()">Xuất Excel</button>
+        <input type="file" id="importExcel" accept=".xlsx,.xls">
+        <button id="saveToDB" class="button_tkb" onclick="importExcel()">Nhập Excel</button>
+    </div>
+
+    <div class="data_tkb">
+        <button class="button_tkb" onclick="them_tkb()">Thêm</button>
+        <div class="table-container">
+            <table class="table-tkb">
+                <thead>
+                    <tr>
+                        <th>Lớp</th>
+                        <th>Thứ 2</th>
+                        <th>Thứ 3</th>
+                        <th>Thứ 4</th>
+                        <th>Thứ 5</th>
+                        <th>Thứ 6</th>
+                        <th>Thứ 7</th>
+                        <th>Chủ nhật</th>
+                    </tr>
+                </thead>
+                <tbody id="lichTableBody">
+                    {% for class, schedule in weekly_schedule.items %}
+                    <tr class="tkb-row">
+                        <td>{{ class }}</td>
+                        <td>
+                            {% for period in schedule.mon %}
+                            <div>
+                                Tiết: {{ period.tiet }} 
+                                <button class="button_tkb" onclick="ds_sv('{{ period.malich }}', this)">SV</button>
+                                <button class="button_tkb" onclick="sua_tkb('{{ period.malich }}', this)">Sửa</button>
+                                <button class="button_tkb" onclick="xoa_tkb('{{ period.malich }}', this)">Xóa</button>
+                            </div>
+                            {% endfor %}
+                        </td>
+                        <!-- Lặp lại cho các ngày khác như trên -->
+                        <td>{% for period in schedule.tue %}<div>Tiết: {{ period.tiet }} <button class="button_tkb" onclick="ds_sv('{{ period.malich }}', this)">SV</button><button class="button_tkb" onclick="sua_tkb('{{ period.malich }}', this)">Sửa</button><button class="button_tkb" onclick="xoa_tkb('{{ period.malich }}', this)">Xóa</button></div>{% endfor %}</td>
+                        <td>{% for period in schedule.wed %}<div>Tiết: {{ period.tiet }} <button class="button_tkb" onclick="ds_sv('{{ period.malich }}', this)">SV</button><button class="button_tkb" onclick="sua_tkb('{{ period.malich }}', this)">Sửa</button><button class="button_tkb" onclick="xoa_tkb('{{ period.malich }}', this)">Xóa</button></div>{% endfor %}</td>
+                        <td>{% for period in schedule.thu %}<div>Tiết: {{ period.tiet }} <button class="button_tkb" onclick="ds_sv('{{ period.malich }}', this)">SV</button><button class="button_tkb" onclick="sua_tkb('{{ period.malich }}', this)">Sửa</button><button class="button_tkb" onclick="xoa_tkb('{{ period.malich }}', this)">Xóa</button></div>{% endfor %}</td>
+                        <td>{% for period in schedule.fri %}<div>Tiết: {{ period.tiet }} <button class="button_tkb" onclick="ds_sv('{{ period.malich }}', this)">SV</button><button class="button_tkb" onclick="sua_tkb('{{ period.malich }}', this)">Sửa</button><button class="button_tkb" onclick="xoa_tkb('{{ period.malich }}', this)">Xóa</button></div>{% endfor %}</td>
+                        <td>{% for period in schedule.sat %}<div>Tiết: {{ period.tiet }} <button class="button_tkb" onclick="ds_sv('{{ period.malich }}', this)">SV</button><button class="button_tkb" onclick="sua_tkb('{{ period.malich }}', this)">Sửa</button><button class="button_tkb" onclick="xoa_tkb('{{ period.malich }}', this)">Xóa</button></div>{% endfor %}</td>
+                        <td>{% for period in schedule.sun %}<div>Tiết: {{ period.tiet }} <button class="button_tkb" onclick="ds_sv('{{ period.malich }}', this)">SV</button><button class="button_tkb" onclick="sua_tkb('{{ period.malich }}', this)">Sửa</button><button class="button_tkb" onclick="xoa_tkb('{{ period.malich }}', this)">Xóa</button></div>{% endfor %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8">Không có dữ liệu</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Form thêm/sửa lịch -->
+<div id="formModal" style="display:none; position:fixed; top:25%; left:50%; transform:translateX(-50%); background:white; padding:20px; border-radius:10px; box-shadow:0 4px 6px rgba(0,0,0,0.1);width: 90%;z-index: 1002;">
+    <form id="lichForm" method="POST">
+        {% csrf_token %}
+        <input type="hidden" id="malich" name="malich">
+        <input type="hidden" id="action" name="action">
+        <label>Mã Lớp:</label><input type="text" id="lophp" name="lophp"><br>
+        <label>Tiết:</label><input type="number" id="tiet" name="tiet"><br>
+        <label>Ngày:</label><input type="date" id="ngay" name="ngay"><br>
+        <button type="button" class="button_tkb" onclick="submitForm()">Lưu</button>
+        <button type="button" class="button_tkb" onclick="document.getElementById('formModal').style.display='none'">Hủy</button>
+    </form>
+</div>
+
+<!-- Modal danh sách sinh viên -->
+<div id="dsSvModal" style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-45%); background:white; padding:20px; border-radius:25px; box-shadow:0 4px 6px rgba(0,0,0,0.1); width:75%;z-index:1001;border: 3px solid #e3e6f0;">
+    <h4 style="text-align:center; margin-bottom:20px;">Danh Sách Sinh Viên</h4>
+    <div class="button-group" style="justify-content: space-between; margin-bottom: 15px;">
+        <button class="button_tkb" onclick="them_sv()">Thêm</button>
+        <input type="file" id="importSvExcel" accept=".xlsx" style="margin: 0;">
+        <div>
+            <button class="button_tkb" onclick="importSvExcel()">Nhập Excel</button>
+            <button class="button_tkb" onclick="exportSvExcel()">Xuất Excel</button>
+            <button class="button_tkb" onclick="document.getElementById('dsSvModal').style.display='none'">Đóng</button>
+        </div>
+    </div>
+    <div class="table-container">
+        <table class="table-tkb" id="dsSvTable">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>MSSV</th>
+                    <th>Họ Tên</th>
+                    <th>Lớp</th>
+                    <th>Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody id="dsSvTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Form thêm/sửa sinh viên -->
+<div id="formSvModal" style="display:none; position:fixed; top:45%; left:50%; transform:translateX(-50%); background:white; padding:20px; border-radius:10px; box-shadow:0 4px 6px rgba(0,0,0,0.1); width:90%; max-width:450px; z-index:1002;margin: 10px;border: 3px solid #dddfeb;">
+    <form id="svForm">
+        <input type="hidden" id="actionSv" name="action">
+        <input type="hidden" id="oldMssv" name="old_mssv">
+        <input type="hidden" id="lophpSv" name="lophp">
+        <label style="font-size: medium;font-weight: 600;color: black;margin: 10px;">MSSV:</label>
+        <input type="text" id="mssv" name="mssv" style="border-radius: 7px;border: 1px solid;"><br>
+        <button type="button" class="button_tkb" onclick="submitSvForm()">Lưu</button>
+        <button type="button" class="button_tkb" onclick="document.getElementById('formSvModal').style.display='none'">Hủy</button>
+    </form>
+</div>
+
+<script>
+    // Lấy ngày hiện tại theo giờ Việt Nam (UTC+7)
+    let currentDate = new Date();
+    const vietnamDateStr = currentDate.toLocaleString('en-US', { 
+        timeZone: 'Asia/Ho_Chi_Minh', 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+    }).split(',')[0]; // Lấy "MM/DD/YYYY"
+    const [month, day, year] = vietnamDateStr.split('/');
+    currentDate = new Date(`${year}-${month}-${day}`);
+    currentDate.setHours(0, 0, 0, 0);
+    console.log("Ngày hiện tại (Việt Nam):", currentDate.toLocaleDateString('en-CA')); // YYYY-MM-DD
+
+    // Tính currentWeekStart (Thứ Hai của tuần hiện tại)
+    const dayOfWeek = currentDate.getDay(); // 0 = CN, 1 = T2, ..., 6 = T7
+    const daysToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek); // Điều chỉnh về Thứ Hai
+    let currentWeekStart = new Date(currentDate);
+    currentWeekStart.setDate(currentDate.getDate() + daysToMonday);
+
+    console.log("Khởi tạo currentWeekStart:", currentWeekStart.toLocaleDateString('en-CA'));
+    updateWeekDates();
+    fetchWeeklySchedule();
+    function formatDate(date) {
+        return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function updateWeekDates() {
+        const weekStart = new Date(currentWeekStart);
+        weekStart.setHours(0, 0, 0, 0); // Đảm bảo giờ là 00:00:00 giờ địa phương
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6); // Cộng 6 ngày để tới Chủ Nhật
+    
+        const weekStartStr = weekStart.toLocaleDateString('en-CA'); // YYYY-MM-DD theo giờ địa phương
+        const weekEndStr = weekEnd.toLocaleDateString('en-CA');     // YYYY-MM-DD theo giờ địa phương
+    
+        document.getElementById('weekDates').textContent = `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
+        console.log("Cập nhật weekDates:", weekStartStr, "-", weekEndStr);
+    }
+    function changeWeek(offset) {
+        currentWeekStart.setDate(currentWeekStart.getDate() + (offset * 7));
+        const dayOfWeek = currentWeekStart.getDay();
+        const daysToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+        currentWeekStart.setDate(currentWeekStart.getDate() + daysToMonday);
+        console.log("Sau khi thay đổi tuần:", currentWeekStart.toLocaleDateString('en-CA'));
+        updateWeekDates();
+        fetchWeeklySchedule();
+    }
+    function fetchWeeklySchedule() {
+        const startDate = currentWeekStart.toLocaleDateString('en-CA'); // Ngày Thứ Hai
+        fetch(`/get_weekly_schedule?start_date=${startDate}`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                const tbody = document.getElementById('lichTableBody');
+                tbody.innerHTML = '';
+                if (data.status !== 'success' || Object.keys(data.schedule).length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8">Không có dữ liệu</td></tr>';
+                    return;
+                }
+                for (const [className, schedule] of Object.entries(data.schedule)) {
+                    const row = document.createElement('tr');
+                    row.className = 'tkb-row';
+                    row.innerHTML = `
+                        <td>${className}</td>
+                        <td>${formatDaySchedule(schedule.mon)}</td>
+                        <td>${formatDaySchedule(schedule.tue)}</td>
+                        <td>${formatDaySchedule(schedule.wed)}</td>
+                        <td>${formatDaySchedule(schedule.thu)}</td>
+                        <td>${formatDaySchedule(schedule.fri)}</td>
+                        <td>${formatDaySchedule(schedule.sat)}</td>
+                        <td>${formatDaySchedule(schedule.sun)}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Lỗi khi tải lịch: ' + error.message,
+                    confirmButtonText: 'OK'
+                });
+            });
+    }
+    function formatDaySchedule(periods) {
+        return periods.map(p => `
+            <div>
+                Tiết: ${p.tiet}
+                <button class="button_tkb" onclick="ds_sv('${p.malich}', this)">SV</button>
+                <button class="button_tkb" onclick="sua_tkb('${p.malich}', this)">Sửa</button>
+                <button class="button_tkb" onclick="xoa_tkb('${p.malich}', this)">Xóa</button>
+            </div>
+        `).join('');
+    }
+
+    updateWeekDates();
+    fetchWeeklySchedule();
+
+    function them_tkb() {
+        document.getElementById('malich').value = '';
+        document.getElementById('lophp').value = '';
+        document.getElementById('tiet').value = '';
+        document.getElementById('ngay').value = '';
+        document.getElementById('action').value = 'add';
+        document.getElementById('formModal').style.display = 'block';
+    }
+
+    function sua_tkb(malich, button) {
+        fetch(`/get_weekly_schedule?malich=${malich}`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    let found = false;
+                    for (const [className, schedule] of Object.entries(data.schedule)) {
+                        for (const day of ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']) {
+                            const period = schedule[day].find(p => p.malich == malich);
+                            if (period) {
+                                document.getElementById('malich').value = malich;
+                                document.getElementById('lophp').value = className;
+                                document.getElementById('tiet').value = period.tiet;
+                                document.getElementById('ngay').value = period.ngay;
+                                document.getElementById('action').value = 'edit';
+                                document.getElementById('formModal').style.display = 'block';
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
+                    }
+                    if (!found) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Không tìm thấy',
+                            text: 'Không tìm thấy lịch để sửa!',
+                            confirmButtonText: 'OK',
+                            timer: 2000, // Tự động đóng sau 2 giây
+                            timerProgressBar: true,
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            }
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Lỗi khi lấy dữ liệu lịch: ' + data.message,
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi API',
+                    text: 'Lỗi khi gọi API: ' + error.message,
+                    confirmButtonText: 'OK'
+                });
+            });
+    }
+    function getDateFromDay(day) {
+        const dayMap = { 'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6 };
+        const date = new Date(currentWeekStart);
+        date.setDate(date.getDate() + dayMap[day]);
+        return date.toISOString().split('T')[0];
+    }
+
+    function xoa_tkb(malich, button) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Xác nhận',
+            text: 'Bạn có chắc muốn xóa lịch này?',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/lich_view/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: `action=delete&malich=${malich}`
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        fetchWeeklySchedule();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: data.message,
+                            confirmButtonText: 'OK',
+                            timer: 2000, // Tự động đóng sau 2 giây
+                            timerProgressBar: true,
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: data.message,
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Lỗi: ' + error.message,
+                        confirmButtonText: 'OK'
+                    });
+                });
+            }
+        });
+    }
+
+    let currentLophp = '';
+    function ds_sv(malich, button = null) {
+        if (button) {
+            let row = button.closest('tr');
+            if (row) currentLophp = row.cells[0].innerText.trim();
+        }
+        if (!currentLophp) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cảnh báo',
+                text: 'Vui lòng chọn lớp học phần trước khi xem danh sách sinh viên!',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+        fetch(`/get_members/?lophp=${encodeURIComponent(currentLophp)}`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    let tbody = document.getElementById('dsSvTableBody');
+                    tbody.innerHTML = '';
+                    if (data.members && data.members.length > 0) {
+                        data.members.forEach(student => {
+                            let tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${student.stt}</td> <!-- Hiển thị STT -->
+                                <td>${student.mssv}</td>
+                                <td>${student.name}</td>
+                                <td>${student.lophp}</td>
+                                <td>
+                                    <button class="button_tkb" onclick="sua_sv('${student.mssv}')">Sửa</button>
+                                    <button class="button_tkb" onclick="xoa_sv('${student.mssv}')">Xóa</button>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5">Không có sinh viên nào trong lớp này</td></tr>'; // Cập nhật colspan thành 5
+                    }
+                    document.getElementById('dsSvModal').style.display = 'block';
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: data.message || 'Không thể tải danh sách sinh viên',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Lỗi khi tải danh sách sinh viên: ' + error.message,
+                    confirmButtonText: 'OK'
+                });
+            });
+    }
+    function them_sv() {
+        document.getElementById('actionSv').value = 'add';
+        document.getElementById('oldMssv').value = '';
+        document.getElementById('mssv').value = '';
+        document.getElementById('lophpSv').value = currentLophp;
+        document.getElementById('formSvModal').style.display = 'block';
+    }
+
+    function sua_sv(mssv) {
+        document.getElementById('actionSv').value = 'edit';
+        document.getElementById('oldMssv').value = mssv;
+        document.getElementById('mssv').value = mssv;
+        document.getElementById('lophpSv').value = currentLophp;
+        document.getElementById('formSvModal').style.display = 'block';
+    }
+
+    function xoa_sv(mssv) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Xác nhận',
+            text: 'Bạn có chắc muốn xóa sinh viên này khỏi lớp?',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/delete_student_from_class/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: `mssv=${encodeURIComponent(mssv)}&lophp=${encodeURIComponent(currentLophp)}`
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        ds_sv(null);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: data.message,
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: data.message,
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Lỗi: ' + error.message,
+                        confirmButtonText: 'OK'
+                    });
+                });
+            }
+        });
+    }
+
+    function submitSvForm() {
+        let action = document.getElementById('actionSv').value;
+        let mssv = document.getElementById('mssv').value;
+        let oldMssv = document.getElementById('oldMssv').value;
+        let lophp = document.getElementById('lophpSv').value;
+    
+        let url = action === 'add' ? '/add_student_to_class/' : '/update_student_in_class/';
+        let body = action === 'add' 
+            ? `mssv=${encodeURIComponent(mssv)}&lophp=${encodeURIComponent(lophp)}`
+            : `old_mssv=${encodeURIComponent(oldMssv)}&new_mssv=${encodeURIComponent(mssv)}&lophp=${encodeURIComponent(lophp)}`;
+    
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: body
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('formSvModal').style.display = 'none';
+                currentLophp = lophp;
+                ds_sv(null);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công',
+                    text: data.message,
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: data.message,
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Lỗi: ' + error.message,
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+   
+    function submitForm() {
+        let lophp = document.getElementById('lophp').value;
+        let tiet = document.getElementById('tiet').value;
+        let ngayInput = document.getElementById('ngay').value;
+        let action = document.getElementById('action').value;
+
+        if (!lophp || !tiet || !ngayInput) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Thiếu thông tin',
+                text: 'Vui lòng nhập đầy đủ mã lớp, tiết và ngày!',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        let inputDate;
+        try {
+            inputDate = new Date(ngayInput);
+            if (isNaN(inputDate.getTime())) throw new Error('Ngày không hợp lệ');
+        } catch (e) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi định dạng',
+                text: 'Ngày nhập không đúng định dạng (VD: 2025-03-23)!',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        const weekStart = new Date(currentWeekStart);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        const inputDateStr = inputDate.toLocaleDateString('en-CA');
+        const weekStartStr = weekStart.toLocaleDateString('en-CA');
+        const weekEndStr = weekEnd.toLocaleDateString('en-CA');
+
+        console.log("weekStartStr:", weekStartStr);
+        console.log("weekEndStr:", weekEndStr);
+        console.log("inputDateStr:", inputDateStr);
+
+        if (inputDateStr < weekStartStr || inputDateStr > weekEndStr) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Ngày không hợp lệ',
+                text: `Ngày ${ngayInput} không thuộc tuần hiện tại (${formatDate(weekStart)} - ${formatDate(weekEnd)})!`,
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        let formData = new FormData(document.getElementById('lichForm'));
+        fetch('/lich_view/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('formModal').style.display = 'none';
+                fetchWeeklySchedule();
+                Swal.fire({
+                    icon: 'success',
+                    title: action === 'add' ? 'Thêm thành công' : 'Sửa thành công',
+                    text: data.message,
+                    confirmButtonText: 'OK',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    customClass: {
+                        confirmButton: 'btn btn-primary'
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: data.message,
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Lỗi: ' + error.message,
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+    {% comment %} function importExcel() {
+        let fileInput = document.getElementById('importExcel');
+        let file = fileInput.files[0];
+        if (!file) {
+            Swal.fire('Lỗi', 'Vui lòng chọn file Excel!', 'error');
+            return;
+        }
+        
+        let formData = new FormData();
+        formData.append('file', file);
+        
+        fetch('/import-excel/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                fetchWeeklySchedule();
+                Swal.fire('Thành công', data.message, 'success');
+            } else {
+                Swal.fire('Lỗi', data.message, 'error');
+            }
+        })
+        .catch(error => Swal.fire('Lỗi', 'Lỗi: ' + error.message, 'error'));
+    } {% endcomment %}
+    
+    function importExcel() {
+        let fileInput = document.getElementById('importExcel');
+        let file = fileInput.files[0];
+        if (!file) {
+            Swal.fire('Lỗi', 'Vui lòng chọn file Excel (.xlsx hoặc .xls)!', 'error');
+            return;
+        }
+        
+        let formData = new FormData();
+        formData.append('file', file);
+        
+        fetch('/import-excel/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                Swal.fire('Thành công', data.message, 'success');
+                fetchWeeklySchedule();
+            } else {
+                Swal.fire('Lỗi', data.message, 'error');
+            }
+        })
+        .catch(error => Swal.fire('Lỗi', 'Lỗi: ' + error.message, 'error'));
+    }
+    function importSvExcel() {
+        let fileInput = document.getElementById('importSvExcel');
+        let file = fileInput.files[0];
+        if (!file) {
+            Swal.fire('Lỗi', 'Vui lòng chọn file Excel!', 'error');
+            return;
+        }
+        
+        let formData = new FormData();
+        formData.append('file', file);
+        formData.append('lophp', currentLophp);
+        
+        fetch('/import-students-to-class-excel/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                ds_sv(null);
+                Swal.fire('Thành công', data.message, 'success');
+            } else {
+                Swal.fire('Lỗi', data.message, 'error');
+            }
+        })
+        .catch(error => Swal.fire('Lỗi', 'Lỗi: ' + error.message, 'error'));
+    }
+    function exportSvExcel() {
+        if (!currentLophp) {
+            Swal.fire('Lỗi', 'Vui lòng chọn lớp học phần trước khi xuất Excel!', 'error');
+            return;
+        }
+        
+        window.location.href = `/export-students-by-class/?lophp=${encodeURIComponent(currentLophp)}`;
+    }
+</script>
+{% endblock main %}
+   

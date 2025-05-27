@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block main %}
+    <style>
+        /* Giữ nguyên màu sắc và kiểu dáng gốc */
+        .container-fluid {
+            padding: 20px;
+        }
+    
+        h3 {
+            color: #333;
+            font-weight: bold;
+        }
+    
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            max-width: 100%;
+            flex-direction: column;
+        }
+    
+        .col-md-6.col-xl-4 {
+            flex: 1 1 100%;
+            max-width: 100%;
+            min-width: 0; /* Ngăn kéo dài quá mức */
+        }
+        .tb_nut {
+            width: auto !important; /* Ghi đè Bootstrap */
+            display: flex;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            align-items: flex-end;
+        }
+        .card {
+            width: 100%;
+            box-sizing: border-box; /* Đảm bảo padding không làm tràn */
+        }
+    
+        .chart-area {
+            height: 320px;
+            width: 100%;
+            max-width: 494px;
+        }
+    
+        /* Nhiều tỉ lệ màn hình */
+        @media (min-width: 1200px) { /* Desktop lớn */
+            .col-md-6.col-xl-4 {
+                flex: 1 1 33.33%;
+                max-width: 33.33%;
+            }
+        }
+    
+        @media (max-width: 1024px) { /* Tablet lớn */
+            .col-md-6.col-xl-4 {
+                flex: 1 1 50%;
+                max-width: 50%;
+            }
+            .chart-area {
+                height: 280px;
+            }
+        }
+    
+        @media (max-width: 768px) { /* Tablet nhỏ/Mobile lớn */
+            .col-md-6.col-xl-4 {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+            .card-body {
+                padding: 10px;
+            }
+            .chart-area {
+                height: 250px;
+                max-width: 100%;
+            }
+        }
+    
+        @media (max-width: 576px) { /* Mobile trung bình */
+            h3 {
+                font-size: 1.5rem;
+            }
+            .card-body {
+                padding: 8px;
+            }
+            .text-xs {
+                font-size: 0.8rem;
+            }
+            .chart-area {
+                height: 200px;
+            }
+        }
+    
+        @media (max-width: 414px) { /* Mobile nhỏ (iPhone X, Galaxy S9) */
+            .card-body {
+                padding: 6px;
+            }
+            .text-xs {
+                font-size: 0.7rem;
+            }
+            .h5 {
+                font-size: 1.2rem;
+            }
+            .chart-area {
+                height: 180px;
+            }
+        }
+    
+        @media (max-width: 360px) { /* Mobile rất nhỏ (Galaxy S5) */
+            h3 {
+                font-size: 1.3rem;
+            }
+            .card-body {
+                padding: 5px;
+            }
+            .text-xs {
+                font-size: 0.65rem;
+            }
+            .h5 {
+                font-size: 1rem;
+            }
+            .chart-area {
+                height: 150px;
+            }
+        }
+    
+        @media (max-width: 320px) { /* Mobile siêu nhỏ (iPhone 5) */
+            h3 {
+                font-size: 1.2rem;
+            }
+            .card-body {
+                padding: 4px;
+            }
+            .text-xs {
+                font-size: 0.6rem;
+            }
+            .h5 {
+                font-size: 0.9rem;
+            }
+            .chart-area {
+                height: 130px;
+            }
+        }
+    </style>
+
+    <div class="export">
+        <button type="button" class="button_phong" data-bs-toggle="modal" data-bs-target="#add_phong">
+            Thêm phòng
+        </button>
+        <button class="button_export" onclick="xuat_excel_phong()">Xuất Excel Phòng</button>
+        <button class="button_export" onclick="xuat_excel_thiet_bi()">Xuất Excel Thiết Bị</button>
+    </div>
+
+    <div class="modal fade" id="add_phong" tabindex="-1" aria-labelledby="add_phongLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="add_phongLabel">Thông tin phòng thêm</h1>
+                </div>
+                <form action="" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <p>
+                            <label for="id_maPhong">Mã phòng:</label>
+                            <input type="text" name="maPhong" class="form-control" maxlength="100" id="id_maPhong" required>
+                        </p>
+                        <p>
+                            <label for="id_tenPhong">Tên phòng:</label>
+                            <input type="text" name="tenPhong" class="form-control" id="id_tenPhong" required>
+                        </p>
+                        <p>
+                            <label for="id_trangThai">Trạng thái phòng:</label>
+                            <select name="trangThai" class="form-control" id="id_trangThai" required>
+                                <option value="Phòng đang học">Phòng đang học</option>
+                                <option value="Phòng không học">Phòng không học</option>
+                                <option value="Phòng đang sửa chữa">Phòng đang sửa chữa</option>
+                            </select>
+                        </p>
+                        <input type="text" name="Loai_MuonThem" value="Phong" hidden>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mx-2">
+        {% for listPhongHoc in PhongHocs %}
+            <div class="phong">
+                <div>
+                    <h3 style="text-align: center;"> Thông Tin Phòng Học </h3>
+                    <h4>Mã Phòng Học: {{listPhongHoc.maPhong}}</h4>
+                    <h4>Tên Phòng Học: {{listPhongHoc.tenPhong}}</h4>
+                    <h4>Trạng Thái Phòng Học : {{listPhongHoc.trangThaiPhong}}</h4>
+                </div>
+                <div class="change d-flex justify-content-around">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#edit__{{listPhongHoc.id}}">
+                        <i class="fa-solid fa-pen-to-square mx-2"></i>
+                        Chỉnh sửa
+                    </button>
+                    <button class="btn btn_del btn-danger" data-bs-toggle="modal" data-bs-target="#del__{{listPhongHoc.id}}">
+                        <i class="fa-solid fa-trash mx-2"></i>
+                        Xoá
+                    </button>
+                </div>
+                <hr class="border border-danger border-2 opacity-50">
+                <strong style="display: flex; justify-content: space-around;">Danh Sách Thiết Bị:</strong>
+                <div class="justify-content-center d-flex">
+                    <button type="button" class="btn btn-primary mt-2 mb-4" data-bs-toggle="modal" data-bs-target="#add_thietBi__{{listPhongHoc.id}}">
+                        Thêm thiết bị
+                    </button>
+                </div>
+                {% for ThietBi_list in ThietBi %}
+                    {% if ThietBi_list.phongHoc.id == listPhongHoc.id %}
+                        <div class="thietbi">
+                            <div class="tt_thietbi">
+                                Mã Thiết Bị: {{ ThietBi_list.maThietBi }},
+                                Tên: {{ ThietBi_list.tenThietBi }},
+                                Trạng Thái: {{ ThietBi_list.trangThaiThietBi }}
+                            </div>
+                            <div class="tb_nut">
+                                <button class="button_tb btn btn-primary get_data_BT" data-bs-toggle="modal" data-bs-target="#editTB__{{ThietBi_list.id}}" data-maThietBi="{{listPhongHoc.maPhong}}">
+                                    <i class="fa-solid fa-pen-to-square mx-2"></i>
+                                    Sửa
+                                </button>
+                                <button class="button_tb btn btn_del btn-danger" data-bs-toggle="modal" data-bs-target="#delTB__{{ThietBi_list.id}}">
+                                    <i class="fa-solid fa-trash mx-2"></i>
+                                    Xoá
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    {% for i in PhongHocs %}
+        <div class="modal fade" id="add_thietBi__{{i.id}}" tabindex="-1" aria-labelledby="add_phongLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="add_phongLabel">Thông tin thiết bị thêm cho phòng {{i.maPhong}}</h1>
+                    </div>
+                    <form action="" method="post">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <p>
+                                <label for="id_maThietBi">Mã thiết bị:</label>
+                                <input type="text" name="maThietBi" class="form-control" maxlength="100" id="id_maThietBi" required>
+                            </p>
+                            <p>
+                                <label for="id_tenThietBi">Tên thiết bị:</label>
+                                <input type="text" name="tenThietBi" class="form-control" id="id_tenThietBi" required>
+                            </p>
+                            <p>
+                                <label for="id_trangThaiThietBi">Trạng thái thiết bị:</label>
+                                <select name="trangThaiThietBi" class="form-control" id="id_trangThaiThietBi" required>
+                                    <option value="Thiết bị đang dùng">Thiết bị đang dùng</option>
+                                    <option value="Thiết bị không dùng">Thiết bị không dùng</option>
+                                    <option value="Thiết bị đang hỏng">Thiết bị đang hỏng</option>
+                                </select>
+                            </p>
+                            <input type="text" name="Loai_MuonThem" value="thietBi" hidden>
+                            <input type="text" name="MaPhong" value="{{i.maPhong}}" hidden>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    
+
+    {% for i in PhongHocs %}
+        <form action="{% url 'phong_Delete' i.id %}" method="post">
+            {% csrf_token %}
+            <div class="modal fade" id="del__{{i.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="exampleModalLabel">Xác nhận?</h1>
+                        </div>
+
+                        <div class="modal-body">
+                            Bạn xác nhận muốn xoá phòng học {{i.maPhong}}?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-primary RELOAD" id="confirm">Xác nhận</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    {% endfor %}
+
+    {% for i in PhongHocs %}
+        <form action="/phong_Update/{{i.id}}" method="post">
+            <div class="modal fade" id="edit__{{i.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                {% csrf_token %}
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="exampleModalLabel">Chỉnh sửa thông tin phòng học</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                <label for="id_maPhong_edit">Mã phòng:</label>
+                                <input type="text" name="edit_maPhong" class="form-control" maxlength="100" id="id_maPhong_edit" required value="{{i.maPhong}}">
+                            </p>
+                            <p>
+                                <label for="id_tenPhong_edit">Tên phòng:</label>
+                                <input type="text" name="edit_tenPhong" class="form-control" id="id_tenPhong_edit" required value="{{i.tenPhong}}">
+                            </p>
+                            <p>
+                                <label for="id_trangThai_edit">Trạng thái phòng:</label>
+                                <select name="edit_trangThai" class="form-control" id="id_trangThai_edit" required>
+                                    <option value="Phòng đang học" {% if i.trangThaiPhong == "Phòng đang học" %}selected{% endif %}>Phòng đang học</option>
+                                    <option value="Phòng không học" {% if i.trangThaiPhong == "Phòng không học" %}selected{% endif %}>Phòng không học</option>
+                                    <option value="Phòng đang sửa chữa" {% if i.trangThaiPhong == "Phòng đang sửa chữa" %}selected{% endif %}>Phòng đang sửa chữa</option>
+                                </select>
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    {% endfor %}
+
+    {% for i in ThietBi %}
+        <form action="{% url 'thietbi_Delete' i.id %}" method="post">
+            {% csrf_token %}
+            <div class="modal fade" id="delTB__{{i.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="exampleModalLabel">Xác nhận?</h1>
+                        </div>
+
+                        <div class="modal-body">
+                            Bạn xác nhận muốn xoá thiết bị {{i.maPhong}}?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-primary RELOAD" id="confirm">Xác nhận</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    {% endfor %}
+
+    <script>
+        // JavaScript để lấy giá trị từ data-maThietBi và truyền vào modal khi mở
+        document.querySelectorAll('.get_data_BT').forEach(function(button) {
+            button.addEventListener('click', function() {
+            // Lấy giá trị maThietBi từ data-attribute
+            var maThietBi = button.getAttribute('data-maThietBi');
+            console.log(maThietBi)
+            
+            // Tìm modal tương ứng và điền dữ liệu vào
+            var modalId = button.getAttribute('data-bs-target');
+            var modal = document.querySelector(modalId);
+            
+            // Điền giá trị vào input trong modal
+            var maThietBiInput = modal.querySelector(`#maThietBiInput__`);
+            if (maThietBiInput) {
+                maThietBiInput.value = maThietBi;
+            }
+            });
+        });
+  
+    </script>
+    {% for i in ThietBi %}
+        <form action="/thietbi_Update/{{i.id}}" method="post">
+            <div class="modal fade" id="editTB__{{i.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                {% csrf_token %}
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="exampleModalLabel">Chỉnh sửa thông tin thiết bị có mã {{i.maThietBi}}</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="text" class="form-control" name="maThietBiInput__" id="maThietBiInput__" readonly hidden>
+                            <p>
+                                <label for="id_maThietBi_edit">Mã thiết bị:</label>
+                                <input type="text" name="edit_maThietBi" class="form-control" maxlength="100" id="id_maThietBi_edit" required value="{{i.maThietBi}}">
+                            </p>
+                            <p>
+                                <label for="id_tenThietBi_edit">Tên thiết bị:</label>
+                                <input type="text" name="edit_tenThietBi" class="form-control" id="id_tenThietBi_edit" required value="{{i.tenThietBi}}">
+                            </p>
+                            <p>
+                                <label for="id_trangThaiThietBi_edit">Trạng thái phòng:</label>
+                                <select name="edit_trangThaiThietBi" class="form-control" id="id_trangThaiThietBi_edit" required>
+                                    <option value="Thiết bị đang dùng" {% if i.trangThaiThietBi == "Thiết bị đang dùng" %}selected{% endif %}>Thiết bị đang dùng</option>
+                                    <option value="Thiết bị không dùng" {% if i.trangThaiThietBi == "Thiết bị không dùng" %}selected{% endif %}>Thiết bị không dùng</option>
+                                    <option value="Thiết bị đang hỏng" {% if i.trangThaiThietBi == "Thiết bị đang hỏng" %}selected{% endif %}>Thiết bị đang hỏng</option>
+                                </select>
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    {% endfor %}
+    <footer class="bg-white sticky-footer"></footer>
+{% endblock main %}

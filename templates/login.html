@@ -1,0 +1,209 @@
+<DOCUMENT>
+    <div class="container">
+        <style>
+    /* Tạo background gradient rực rỡ */
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fad0c4, #ffdde1);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    
+    /* Container của form */
+    .container {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        width: 350px;
+        text-align: center;
+        transition: 0.3s;
+    }
+    
+    .container:hover {
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Tiêu đề */
+    h2 {
+        color: #333;
+        margin-bottom: 20px;
+    }
+    
+    /* Form input */
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    input {
+        padding: 12px;
+        margin: 8px 0;
+        border: none;
+        border-radius: 8px;
+        box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.1);
+        outline: none;
+        font-size: 16px;
+    }
+    
+    /* Nút bấm */
+    button {
+        padding: 12px;
+        margin-top: 10px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    
+    button[type="submit"] {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+    
+    button[type="submit"]:hover {
+        background: linear-gradient(135deg, #0056b3, #003f7f);
+    }
+    
+    /* Thông báo */
+    #message {
+        margin-top: 10px;
+    }
+    
+    .message.success { 
+        color: green; 
+    }
+    
+    .message.error { 
+        color: red; 
+    }
+    
+    /* Liên kết */
+    p {
+        margin-top: 15px;
+    }
+    
+    a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    
+    a:hover {
+        text-decoration: underline;
+    }
+        </style>
+        <h2>Đăng nhập</h2>
+        <form id="loginForm" method="POST">
+            {% csrf_token %}
+            <input type="text" id="username" name="username" placeholder="Tên đăng nhập" required>
+            <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
+            <button type="submit">Đăng nhập</button>
+        </form>
+        <div id="message"></div>
+        <p>Nếu chưa có tài khoản, bạn có thể <a href="{% url 'register' %}">Đăng ký ngay</a>.</p>
+        {% for message in messages %}
+            <p class="message">{{ message }}</p>
+        {% endfor %}
+    </div>
+    
+    <script>
+        async function createSHA256Hash(input) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(input);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+    
+        let randomToken = '';
+        async function fetchRandomToken() {
+            try {
+                const response = await fetch('{% url "get_random_token" %}', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                randomToken = data.random_token;
+                console.log('Random token:', randomToken);
+            } catch (error) {
+                console.error('Lỗi khi lấy mã ngẫu nhiên:', error);
+                document.getElementById('message').innerHTML = '<p class="message error">Không thể lấy mã ngẫu nhiên. Vui lòng thử lại!</p>';
+            }
+        }
+    
+        window.onload = fetchRandomToken;
+    
+        async function login(event) {
+            event.preventDefault(); // Ngăn form submit mặc định
+    
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+    
+            if (!username || !password) {
+                messageDiv.innerHTML = '<p class="message error">Vui lòng nhập đầy đủ thông tin!</p>';
+                return;
+            }
+    
+            // Băm password + randomToken
+            const hashPassword = await createSHA256Hash(password);
+            const hashToken = await createSHA256Hash(randomToken);
+
+            const requestBody = {
+                username: username,
+                password: hashToken,
+                random_token: hashPassword
+            };
+            console.log('Request body:', requestBody);
+    
+            try {
+                const response = await fetch('{% url "login" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(requestBody)
+                });
+    
+                const result = await response.json();
+                console.log('Response:', result);
+                if (result.success) {
+                    messageDiv.innerHTML = '<p class="message success">' + result.message + '</p>';
+                    window.location.href = '{% url "thongke" %}';
+                } else {
+                    messageDiv.innerHTML = '<p class="message error">' + result.message + '</p>';
+                }
+            } catch (error) {
+                console.error('Lỗi khi đăng nhập:', error);
+                messageDiv.innerHTML = '<p class="message error">Đã có lỗi xảy ra. Vui lòng thử lại!</p>';
+            }
+        }
+    
+        // Gắn sự kiện submit cho form
+        document.getElementById('loginForm').addEventListener('submit', login);
+    
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+    </DOCUMENT>

@@ -1,0 +1,128 @@
+﻿/* General Reset */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fc;
+    color: #343a40;
+}
+
+.container-fluid {
+    padding: 20px;
+}
+
+h3 {
+    font-weight: 600;
+    color: #4e73df;
+}
+
+/* Navbar Styling */
+.navbar {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.navbar-search input {
+    border-radius: 20px;
+    padding: 8px 15px;
+    font-size: 14px;
+}
+
+.navbar-search button {
+    background-color: #4e73df;
+    border: none;
+    color: #fff;
+    border-radius: 50%;
+    padding: 5px;
+}
+
+.nav-item .dropdown-menu {
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Table Styling */
+.table-container {
+    margin-top: 20px;
+    border: 1px solid #e3e6f0;
+    border-radius: 10px;
+    background-color: #ffffff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.table-tkb {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .table-tkb th,
+    .table-tkb td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-tkb th {
+        background-color: #f8f9fc;
+        color: #4e73df;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .table-tkb tr:hover {
+        background-color: #f1f1f1;
+    }
+
+    .table-tkb td {
+        color: #5a5c69;
+    }
+
+.tkb-row:nth-child(even) {
+    background-color: #f8f9fc;
+}
+
+.button_tkb {
+    margin:12px;
+    background-color: #4e73df;
+    color: #ffffff;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+    .button_tkb:hover {
+        background-color: #2e59d9;
+    }
+
+    .button_tkb:active {
+        background-color: #224abe;
+    }
+
+.badge-counter {
+    font-size: 12px;
+    font-weight: bold;
+    padding: 3px 6px;
+    border-radius: 50%;
+}
+
+@media (max-width: 768px) {
+    .table-tkb th,
+    .table-tkb td {
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    .navbar-search input {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+
+    .button_tkb {
+        margin:12px;
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+}

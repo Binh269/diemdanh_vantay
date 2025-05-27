@@ -1,0 +1,210 @@
+<DOCUMENT>
+    <div class="container">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: linear-gradient(135deg, #ff9a9e, #ff6a88, #ff99ac);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }        
+            
+            .container {
+                background: white;
+                padding: 25px;
+                border-radius: 15px;
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+                width: 350px;
+                text-align: center;
+                transition: 0.3s;
+            }
+            
+            .container:hover {
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            }
+    
+            h2 {
+                font-size: 30px;
+                margin-bottom: 20px;
+                color: #FF5722;
+            }
+            
+            form {
+                display: flex;
+                flex-direction: column;
+            }
+    
+            label {
+                text-align: left;
+                font-size: 20px;
+                font-weight: bold;
+                margin: 15px 0 4px 0;
+                color: #FF9800;
+            }
+            
+            input {
+                padding: 12px;
+                margin: 0 0 8px 0;
+                border: 1px solid #ff4081;
+                border-radius: 8px;
+                font-size: 16px;
+            }
+            
+            button {
+                padding: 12px;
+                margin-top: 10px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: bold;
+                transition: 0.3s;
+            }
+            
+            button[type="submit"] {
+                background: linear-gradient(135deg, #ff4081, #e91e63);
+                color: white;
+            }
+            
+            button[type="submit"]:hover {
+                background: linear-gradient(135deg, #e91e63, #c2185b);
+            }
+            
+            button[type="button"] {
+                background-color: #28a745;
+                color: white;
+            }
+            
+            button[type="button"]:hover {
+                background-color: #218838;
+            }
+            
+            p {
+                margin-top: 15px;
+            }
+            
+            a {
+                color: #007bff;
+                text-decoration: none;
+            }
+            
+            a:hover {
+                text-decoration: underline;
+            }
+            
+            .message {
+                color: red;
+                margin-top: 10px;
+            }
+            
+            .success {
+                color: green;
+            }
+        </style>
+        <h2>Đăng ký</h2>
+        <form id="register-form">
+            {% csrf_token %}
+            <label for="username">Tên đăng nhập</label>
+            <input type="text" id="username" name="username" placeholder="Tên đăng nhập" required>
+            <label for="name">Tên bạn</label>
+            <input type="text" id="name" name="name" placeholder="Tên bạn" required>
+            <label for="gmail">Email</label>
+            <input type="email" id="gmail" name="gmail" placeholder="gmail" required>
+            <label for="password">Mật khẩu</label>
+            <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
+            <label for="passwordrc">Nhập Lại Mật khẩu</label>
+            <input type="password" id="passwordrc" name="passwordrc" placeholder="Nhập Lại Mật khẩu" required>
+            <button type="submit">Đăng ký</button>
+            <p>Nếu đã có tài khoản, bạn có thể <a href="{% url 'login' %}">Đăng nhập ngay</a>.</p>
+        </form>
+        <div id="message">
+            {% for message in messages %}
+                <p class="message">{{ message }}</p>
+            {% endfor %}
+        </div>
+    
+        <script>
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+    
+            async function createSHA256Hash(input) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(input);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                return hashHex;
+            }
+    
+            document.getElementById('register-form').addEventListener('submit', async function(event) {
+                event.preventDefault(); 
+                const username = document.getElementById('username').value;
+                const name = document.getElementById('name').value;
+                const gmail = document.getElementById('gmail').value;
+                const password = document.getElementById('password').value;
+                const passwordrc = document.getElementById('passwordrc').value;
+                const messageDiv = document.getElementById('message');
+    
+                if (!username || !name || !gmail || !password || !passwordrc) {
+                    messageDiv.innerHTML = '<p class="message">Vui lòng nhập đầy đủ thông tin!</p>';
+                    return;
+                }
+    
+                if (password !== passwordrc) {
+                    messageDiv.innerHTML = '<p class="message">Mật khẩu không khớp!</p>';
+                    return;
+                }
+    
+                const hashPassword = await createSHA256Hash(password);
+                const hashPasswordFake = await createSHA256Hash(password+"fake");
+
+                const requestBody = {
+                    username: username,
+                    name: name,
+                    gmail: gmail,
+                    password:hashPasswordFake,
+                    random_token: hashPassword
+                };
+                console.log('Request body:', requestBody);
+    
+                try {
+                    const response = await fetch('{% url "register" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(requestBody)
+                    });
+    
+                    const result = await response.json();
+                    console.log('Response:', result);
+                    if (result.success) {
+                        messageDiv.innerHTML = '<p class="message success">' + result.message + '</p>';
+                        setTimeout(() => window.location.href = '{% url "login" %}', 1000);
+                    } else {
+                        messageDiv.innerHTML = '<p class="message">' + result.message + '</p>';
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi đăng ký:', error);
+                    messageDiv.innerHTML = '<p class="message">Đã có lỗi xảy ra. Vui lòng thử lại!</p>';
+                }
+            });
+        </script>
+    </div>
+    </DOCUMENT>

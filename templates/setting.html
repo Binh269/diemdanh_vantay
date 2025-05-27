@@ -1,0 +1,563 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Settings{% endblock title %}
+
+{% block main %}
+<style>
+    table tr{
+        vertical-align: middle;
+    }
+</style>
+<div class="container-fluid">
+    <h3 class="text-dark mb-4">Settings</h3>
+
+    <!-- Form cài đặt thông số nhận diện khuôn mặt -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <p class="fw-bold text-primary m-0">Face Detection Settings</p>
+        </div>
+        <div class="card-body">
+            <form id="settings-form">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label" for="kichthuoc"><strong>Kích thước tối thiểu (px²)</strong></label>
+                            <input class="form-control" type="number" id="kichthuoc" name="kichthuoc" min="2000" step="100">
+                            <small class="form-text text-muted">Diện tích tối thiểu để nhận diện khuôn mặt (mặc định: 12000).</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label" for="nguong"><strong>Ngưỡng khoảng cách</strong></label>
+                            <input class="form-control" type="number" id="nguong" name="nguong" step="0.01">
+                            <small class="form-text text-muted">Ngưỡng khoảng cách tối đa để xác định danh tính (mặc định: 0.2).</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <button class="btn btn-primary btn-sm" type="button" id="save-settings" onclick="saveSettings()">Save Settings</button>
+                </div>
+            </form>
+            <div id="message-container" class="mt-2"></div>
+        </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <p class="fw-bold text-primary m-0">Quản lý tài khoản</p>
+        </div>
+        <div class="card-body">
+            <!-- Form thêm tài khoản mới -->
+            <div class="mb-4">
+                <h5 class="text-dark">Thêm tài khoản mới</h5>
+                <form id="add-user-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label" for="new-username"><strong>Username</strong></label>
+                                <input class="form-control" type="text" id="new-username" name="username">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label" for="new-password"><strong>Password</strong></label>
+                                <input class="form-control" type="password" id="new-password" name="password">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label" for="new-name"><strong>Name</strong></label>
+                                <input class="form-control" type="text" id="new-name" name="name">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label" for="new-email"><strong>Gmail</strong></label>
+                                <input class="form-control" type="email" id="new-email" name="email">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label" for="new-is-superuser"><strong>Superuser</strong></label>
+                                <select class="form-select" id="new-is-superuser" name="is_superuser">
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
+                                    <option value="2">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <button class="btn btn-success btn-sm" type="button" onclick="addUser()">Add User</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="container">
+                <div id="message-container" class="mb-3">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+        
+            <div id="message-container-users" class="mb-3"></div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Is Superuser</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list">
+                    </tbody>
+                </table>
+            </div>
+            {% if has_permission %}
+                <button class="btn btn-success" id="add-user" onclick="addUser()">Thêm tài khoản</button>
+            {% endif %}
+            </div>
+            <div id="message-container-users" class="mt-2"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function displayMessage(message, className, containerId = 'message-container') {
+        const messageContainer = document.getElementById(containerId);
+        messageContainer.innerHTML = `<p class="${className}">${message}</p>`;
+        setTimeout(() => { messageContainer.innerHTML = ''; }, 3000);
+    }
+
+    function loadInitialSettings() {
+        fetch('{% url "get_user_settings" %}', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'fail') {
+                displayMessage(data.message, 'text-danger');
+            } else {
+                document.getElementById('kichthuoc').value = data.kichthuoc || 12000;
+                document.getElementById('nguong').value = data.nguong || 0.2;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading initial settings:', error);
+            displayMessage('Lỗi khi tải cài đặt ban đầu!', 'text-danger');
+        });
+    }
+    loadInitialSettings();
+
+    // Hàm lưu cài đặt qua settings_view
+    window.saveSettings = function() {
+        const kichthuoc = document.getElementById('kichthuoc').value;
+        const nguong = document.getElementById('nguong').value;
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+        if (!kichthuoc || !nguong) {
+            displayMessage('Vui lòng nhập đầy đủ thông số!', 'text-danger');
+            return;
+        }
+
+        fetch('{% url "save_settings" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `kichthuoc=${encodeURIComponent(kichthuoc)}&nguong=${encodeURIComponent(nguong)}`
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công',
+                    text: data.message,
+                    confirmButtonText: 'OK',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    customClass: { confirmButton: 'btn btn-primary' }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: data.message,
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error saving settings:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Lỗi khi lưu cài đặt: ' + error.message,
+                confirmButtonText: 'OK'
+            });
+        });
+    };
+
+    function loadUserList() {
+        console.log('Bắt đầu tải danh sách người dùng');
+        const userList = document.getElementById('user-list');
+        
+        // Nếu không tìm thấy user-list, kiểm tra quyền từ server và hiển thị thông báo
+        if (!userList) {
+            console.warn('Không tìm thấy phần tử user-list trong DOM, kiểm tra quyền từ server');
+            fetch('{% url "settings_view" %}', {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`Lỗi HTTP: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dữ liệu từ server:', data);
+                if (data.has_permission === false) {
+                    displayMessage('Không đủ quyền để xem danh sách tài khoản!', 'text-danger', 'message-container-users');
+                } else {
+                    displayMessage('Lỗi: Bảng người dùng không được tải đúng cách!', 'text-danger', 'message-container-users');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi kiểm tra quyền:', error);
+                displayMessage('Lỗi khi kiểm tra quyền truy cập!', 'text-danger', 'message-container-users');
+            });
+            return;
+        }
+
+        // Nếu tìm thấy user-list, tải danh sách người dùng
+        fetch('{% url "settings_view" %}', {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`Lỗi HTTP: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Dữ liệu từ server:', data);
+            if (data.has_permission === true) {
+                userList.innerHTML = '';
+                if (data.users && data.users.length > 0) {
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>${user.name || ''}</td>
+                            <td>${user.email || ''}</td>
+                            <td>
+                                <select class="form-select is-superuser-select" data-user-id="${user.id}">
+                                    <option value="2" ${user.is_superuser == 2 ? 'selected' : ''}>Admin</option>
+                                    <option value="1" ${user.is_superuser == 1 ? 'selected' : ''}>Yes</option>
+                                    <option value="0" ${user.is_superuser < 1 ? 'selected' : ''}>No</option>
+                                </select>
+                            </td>
+                            <td>
+                                <button class="btn btn-primary btn-sm update-user" data-user-id="${user.id}" style='min-width:65px;margin: 3px 0px;'>Update</button>
+                                <button class="btn btn-danger btn-sm delete-user" data-user-id="${user.id}" style='min-width:65px;margin: 3px 0px;'>Delete</button>
+                            </td>
+                        `;
+                        userList.appendChild(row);
+                    });
+                } else {
+                    userList.innerHTML = '<tr><td colspan="6">Không có người dùng nào để hiển thị.</td></tr>';
+                }
+            } else {
+                displayMessage('Không đủ quyền để xem danh sách tài khoản!', 'text-danger', 'message-container-users');
+                userList.innerHTML = '<tr><td colspan="6">Bạn không có quyền truy cập danh sách này.</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi tải danh sách người dùng:', error);
+            displayMessage('Lỗi khi tải danh sách tài khoản!', 'text-danger', 'message-container-users');
+        });
+    }
+    
+    function displayMessage(message, className, containerId = 'message-container') {
+        const messageContainer = document.getElementById(containerId);
+        messageContainer.innerHTML = `<p class="${className}">${message}</p>`;
+        setTimeout(() => { messageContainer.innerHTML = ''; }, 3000);
+    }
+    
+    loadUserList();
+
+    async function createSHA256Hash(input) {
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(input);
+            console.log('Input encoded:', data);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            console.log('Hash buffer:', hashBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            console.log('Hash array:', hashArray);
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            console.log('SHA-256 result:', hashHex);
+            return hashHex;
+        } catch (error) {
+            console.error('Error in createSHA256Hash:', error);
+            return '';
+        }
+    }
+
+    window.addUser = function() {
+        const username = document.getElementById('new-username').value;
+        const password = document.getElementById('new-password').value;
+        const name = document.getElementById('new-name').value;
+        const email = document.getElementById('new-email').value;
+        const isSuperuser = document.getElementById('new-is-superuser').value;
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+        if (!username || !password) {
+            displayMessage('Vui lòng nhập username và password!', 'text-danger', 'message-container-users');
+            return;
+        }
+
+        Swal.fire({
+            icon: 'question',
+            title: 'Xác nhận',
+            text: `Bạn có chắc muốn thêm tài khoản "${username}"?`,
+            showCancelButton: true,
+            confirmButtonText: 'Thêm',
+            cancelButtonText: 'Hủy'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                fetch('{% url "settings_view" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: `action=add&username=${encodeURIComponent(username)}&password=${encodeURIComponent(await createSHA256Hash(password))}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&is_superuser=${encodeURIComponent(isSuperuser)}`
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        displayMessage(data.message, 'text-success', 'message-container-users');
+                        document.getElementById('add-user-form').reset();
+                        loadUserList();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: data.message,
+                            confirmButtonText: 'OK',
+                            timer: 2000,
+                            timerProgressBar: true,
+                            customClass: { confirmButton: 'btn btn-primary' }
+                        });
+                    } else {
+                        displayMessage(data.message, 'text-danger', 'message-container-users');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: data.message,
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding user:', error);
+                    displayMessage('Lỗi khi thêm tài khoản!', 'text-danger', 'message-container-users');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Lỗi khi thêm tài khoản: ' + error.message,
+                        confirmButtonText: 'OK'
+                    });
+                });
+            }
+        });
+    };
+
+    document.addEventListener('click', function(event) {
+        const csrfToken = '{{ csrf_token }}';
+
+        if (event.target.classList.contains('update-user')) {
+            const userId = event.target.getAttribute('data-user-id');
+            const isSuperuser = document.querySelector(`select[data-user-id="${userId}"]`).value;
+            const row = event.target.closest('tr');
+            const currentUsername = row.cells[1].textContent;
+            const currentName = row.cells[2].textContent;
+            const currentEmail = row.cells[3].textContent;
+        
+            Swal.fire({
+                title: 'Cập nhật tài khoản',
+                html: `
+                    <input type="text" id="update-username" class="swal2-input" placeholder="Username" value="${currentUsername}">
+                    <input type="text" id="update-name" class="swal2-input" placeholder="Name" value="${currentName}">
+                    <input type="email" id="update-email" class="swal2-input" placeholder="Email" value="${currentEmail}">
+                    <input type="password" id="update-password" class="swal2-input" placeholder="Nhập mật khẩu mới (nếu muốn thay đổi)">
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Cập nhật',
+                cancelButtonText: 'Hủy',
+                preConfirm: () => {
+                    const username = document.getElementById('update-username').value;
+                    const name = document.getElementById('update-name').value;
+                    const email = document.getElementById('update-email').value;
+                    const password = document.getElementById('update-password').value.trim();
+                    return { username, name, email, password };
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const { username, name, email, password } = result.value;
+                    let body = `action=update&user_id=${encodeURIComponent(userId)}&is_superuser=${encodeURIComponent(isSuperuser)}&username=${encodeURIComponent(username)}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
+        
+                    if (password) {
+                        const hashedPassword = await createSHA256Hash(password);
+                        body += `&password=${encodeURIComponent(hashedPassword)}`;
+                    }
+        
+                    fetch('{% url "settings_view" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: body
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.status === 'success') {
+                            displayMessage(data.message, 'text-success', 'message-container-users');
+                            loadUserList();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: data.message,
+                                confirmButtonText: 'OK',
+                                timer: 2000,
+                                timerProgressBar: true,
+                                customClass: { confirmButton: 'btn btn-primary' }
+                            });
+                        } else {
+                            displayMessage(data.message, 'text-danger', 'message-container-users');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: data.message,
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating user:', error);
+                        displayMessage('Lỗi khi cập nhật tài khoản!', 'text-danger', 'message-container-users');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Lỗi khi cập nhật tài khoản: ' + error.message,
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                }
+            });
+        }
+
+        if (event.target.classList.contains('delete-user')) {
+            const userId = event.target.getAttribute('data-user-id');
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Xác nhận',
+                text: `Bạn có chắc muốn xóa tài khoản có ID ${userId}?`,
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('{% url "settings_view" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: `action=delete&user_id=${encodeURIComponent(userId)}`
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.status === 'success') {
+                            displayMessage(data.message, 'text-success', 'message-container-users');
+                            loadUserList();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: data.message,
+                                confirmButtonText: 'OK',
+                                timer: 2000,
+                                timerProgressBar: true,
+                                customClass: { confirmButton: 'btn btn-primary' }
+                            });
+                        } else {
+                            displayMessage(data.message, 'text-danger', 'message-container-users');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: data.message,
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting user:', error);
+                        displayMessage('Lỗi khi xóa tài khoản!', 'text-danger', 'message-container-users');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Lỗi khi xóa tài khoản: ' + error.message,
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock main %}

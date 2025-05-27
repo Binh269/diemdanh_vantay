@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block main %}
+<style>
+    .container-fluid {
+        padding: 20px;
+        max-width: 100%;
+    }
+
+    h2, h3 {
+        font-weight: bold;
+        color: #005f73;
+        text-align: center;
+    }
+
+    .tiet-ngay-stats {
+        width: 95%;
+        margin: 20px auto;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+        word-break: break-word;
+        min-width: 100px; /* Đảm bảo cột có độ rộng tối thiểu */
+        min-height: 65px;
+        height: 65px;
+    }
+
+    th {
+        background-color: #0077b6;
+        color: white;
+    }
+
+    .da-diem-danh {
+        color: green;
+        font-weight: bold;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .tiet-ngay-stats {
+            width: 90%;
+        }
+        th, td {
+            padding: 7px;
+            font-size: 0.95rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding: 15px;
+        }
+        h2 {
+            font-size: 1.8rem;
+        }
+        .tiet-ngay-stats {
+            width: 100%;
+        }
+        th, td {
+            padding: 6px;
+            font-size: 0.85rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        h2 {
+            font-size: 1.5rem;
+        }
+        th, td {
+            padding: 4px;
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <h2>Thống Kê Điểm Danh</h2>
+    <div>
+        <label for="lopSelect">Chọn lớp:</label>
+        <select id="lopSelect" class="form-control" style="display:inline-block; width:auto;">
+            <option value="">-- Chọn lớp --</option>
+        </select>
+        <button id="exportBtn" class="btn btn-primary" style="margin-left:10px;" disabled>Xuất Excel</button>
+    </div>
+    <div class="tiet-ngay-stats">
+        <h3>Thống Kê Điểm Danh Theo Tiết và Ngày</h3>
+        <div id="tietNgayStats"></div>
+    </div>
+</div>
+<script>
+    function loadData(lop = '') {
+        fetch(`/thongke_chi_tiet/?lop=${lop}`)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Lỗi không xác định');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dữ liệu nhận được:', data);
+
+                const lopSelect = document.getElementById('lopSelect');
+                if (lopSelect && lopSelect.options.length === 1) {
+                    data.lop_list.forEach(lopItem => {
+                        const option = document.createElement('option');
+                        option.value = lopItem;
+                        option.text = lopItem;
+                        lopSelect.appendChild(option);
+                    });
+                }
+
+                const exportBtn = document.getElementById('exportBtn');
+                if (exportBtn) exportBtn.disabled = !lop;
+
+                const tietNgayStatsDiv = document.getElementById('tietNgayStats');
+                if (tietNgayStatsDiv) {
+                    tietNgayStatsDiv.innerHTML = '';
+                    if (!data.tiet_ngay_stats || !data.tiet_ngay_stats.headers || !data.tiet_ngay_stats.data || data.tiet_ngay_stats.data.length === 0) {
+                        tietNgayStatsDiv.innerHTML = '<p>Không có dữ liệu thống kê tiết-ngày.</p>';
+                    } else {
+                        const headers = data.tiet_ngay_stats.headers;
+                        const dataRows = data.tiet_ngay_stats.data;
+
+                        const table = document.createElement('table');
+                        table.className = 'table';
+
+                        const thead = document.createElement('thead');
+                        const headerRow = document.createElement('tr');
+                        headers.forEach(header => {
+                            const th = document.createElement('th');
+                            th.textContent = header;
+                            headerRow.appendChild(th);
+                        });
+                        thead.appendChild(headerRow);
+                        table.appendChild(thead);
+
+                        const tbody = document.createElement('tbody');
+                        dataRows.forEach(row => {
+                            const tr = document.createElement('tr');
+                            headers.forEach(header => {
+                                const td = document.createElement('td');
+                                let key;
+                                if (header === 'STT') {
+                                    key = 'stt';
+                                    td.textContent = row[key] || '';
+                                } else if (header === 'MSSV') {
+                                    key = 'mssv';
+                                    td.textContent = row[key] || '';
+                                } else if (header === 'Họ Tên') {
+                                    key = 'name';
+                                    td.textContent = row[key] || '';
+                                } else {
+                                    const [tietPart, ngayPart] = header.split(' Ngày ');
+                                    const tiet = tietPart.replace('Tiết ', '');
+                                    key = `${ngayPart}_${tiet}`;
+                                    const value = row[key];
+                                    if (value === 'Đã điểm danh') {
+                                        td.textContent = '✓';
+                                        td.className = 'da-diem-danh';
+                                    } else {
+                                        td.textContent = '';
+                                    }
+                                }
+                                tr.appendChild(td);
+                            });
+                            tbody.appendChild(tr);
+                        });
+                        table.appendChild(tbody);
+
+                        tietNgayStatsDiv.appendChild(table);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi:', error.message);
+                const tietNgayStatsDiv = document.getElementById('tietNgayStats');
+                if (tietNgayStatsDiv) {
+                    tietNgayStatsDiv.innerHTML = `<p style="color: red;">${error.message}</p>`;
+                }
+                alert(error.message);
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadData();
+
+        const lopSelect = document.getElementById('lopSelect');
+        if (lopSelect) {
+            lopSelect.addEventListener('change', function() {
+                const selectedLop = this.value;
+                loadData(selectedLop);
+            });
+        }
+
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function() {
+                const selectedLop = document.getElementById('lopSelect')?.value;
+                if (selectedLop) {
+                    window.location.href = `/export_thongke_excel/?lop=${selectedLop}`;
+                }
+            });
+        }
+    });
+</script>
+{% endblock main %}

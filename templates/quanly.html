@@ -1,0 +1,729 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block main %}
+<style>
+    h3 {
+        font-weight: bold;
+        color: #005f73;
+    }
+    .d-flex {
+        display: flex;
+        gap: 20px;
+    }
+    .camera-feed {
+        border-radius: 10px;
+        border: 2px solid #0077b6;
+        width: 100%;
+        max-width: 640px;
+    }
+    .attendance-list {
+        flex: 1;
+        max-width: 1000px;
+    }
+    .table-wrapper {
+        margin-top: 20px;
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+    }
+    table{
+        width: 100%;
+    }
+    th {
+        background-color: #0077b6;
+        color: white;
+    }
+    th, td {
+        border: 1px solid #0077b6;
+        padding: 8px;
+        text-align: center;
+    }
+    #cameraPreview {
+        width: 100%;
+        max-width: 640px;
+        border: 2px solid #0077b6;
+        border-radius: 10px;
+        display: none;
+        transform: scaleX(-1);
+    }
+    .video-container {
+        position: relative;
+        display: inline-block;
+    }
+    .face-label {
+        position: absolute;
+        color: green;
+        font-size: 20px;
+        font-family: Arial, sans-serif;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 2px 5px;
+        border-radius: 3px;
+    }
+    .face-box {
+        position: absolute;
+        border: 2px solid green;
+        pointer-events: none;
+    }
+    @media (max-width: 768px) {
+        .d-flex {
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        .camera-feed {
+            max-width: 100%;
+        }
+        .attendance-list {
+            max-width: 100%;
+        }
+        .table-wrapper {
+            max-height: 300px;
+        }
+        th, td {
+            padding: 6px;
+            font-size: 0.9rem;
+        }
+        button {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+    }
+    @media (max-width: 576px) {
+        h3 {
+            font-size: 1.5rem;
+        }
+        th, td {
+            padding: 4px;
+            font-size: 0.8rem;
+        }
+        button {
+            padding: 6px 10px;
+        }
+    }
+</style>
+
+<div class="container-fluid text-center">
+    <div class="card shadow mt-4 p-4">
+        <h4 class="text-center">Thêm sinh viên mới</h4>
+        <form id="addStudentForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="mssv">Mã SV:</label>
+                <input type="text" id="mssv" name="mssv" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="name">Tên:</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="lop">Lớp:</label>
+                <select id="lop" name="lop" class="form-control" required>
+                    <option value="K56KMT">K56KMT</option>
+                    <option value="K57KMT">K57KMT</option>
+                    <option value="K58KMT">K58KMT</option>
+                    <option value="K59KMT">K59KMT</option>
+                    <option value="K60KMT">K60KMT</option>
+                    <option value="K56KDT1">K56KDT1</option>
+                    <option value="K57KDT1">K57KDT1</option>
+                    <option value="K58KDT1">K58KDT1</option>
+                    <option value="K59KDT1">K59KDT1</option>
+                    <option value="K60KDT1">K60KDT1</option>
+                    <option value="K56KDT2">K56KDT2</option>
+                    <option value="K57KDT2">K57KDT2</option>
+                    <option value="K58KDT2">K58KDT2</option>
+                    <option value="K59KDT2">K59KDT2</option>
+                    <option value="K60KDT2">K60KDT2</option>
+                    {% for lop in danh_sach_lop %}
+                        <option value="{{ lop }}">{{ lop }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="images">Chọn ảnh:</label>
+                <input type="file" id="images" name="images" class="form-control" multiple accept="image/*" required>
+            </div>
+            <div class="text-center mt-2">
+                <button type="button" class="btn btn-primary" onclick="captureImage()">📷 Chụp ảnh</button>
+                <button type="button" id="switchCamera" class="btn btn-secondary" style="display:none">Đổi Camera</button>
+            </div>
+            <div id="message_cam" class="mt-3 font-weight-bold"></div>
+            <div class="cam" style="display: flex;flex-direction: row;flex-wrap: nowrap;justify-content: center;align-items: center;margin: 20px;">
+                <video  id="captureVideo" autoplay style="width: 40%; display: none; transform: scaleX(-1);"></video>
+                <div id="capturedImages" class="mt-2" style="width: 100%; transform: scaleX(-1);"></div>
+            </div>
+            <button type="button" class="btn btn-info mt-2" onclick="addStudent()">Thêm người</button>
+        </form>
+    </div>
+
+    <div class="card shadow mt-4 p-4">
+        <h4 class="text-center">Thêm sinh viên bằng thư mục</h4>
+        <form id="addFolderForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="folderInput">Chọn thư mục lớn (chứa các thư mục mssv_ten_lop):</label>
+                <input type="file" id="folderInput" webkitdirectory directory multiple class="form-control" required>
+            </div>
+            <button type="button" class="btn btn-success mt-2" onclick="addFolder()">Thêm thư mục</button>
+        </form>
+        <div id="folderMessage" class="mt-3 font-weight-bold"></div>
+    </div>
+
+    <div class="card shadow mt-4 p-4">
+        <h4 class="text-center">Đăng ký vân tay</h4>
+        <div id="sensorStatus" class="alert alert-info">
+            Đang kiểm tra trạng thái cảm biến...
+        </div>
+        <form id="fingerprintForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="fingerprintMSSV">Mã SV:</label>
+                <input type="text" id="fingerprintMSSV" name="mssv" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="fingerprintName">Tên:</label>
+                <input type="text" id="fingerprintName" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Ảnh vân tay:</label>
+                <img id="fingerprintPreview" style="display: none; max-width: 200px; border: 2px solid #0077b6; border-radius: 5px;" alt="Ảnh vân tay">
+            </div>
+            <button type="button" class="btn btn-primary mt-2" onclick="registerFingerprint()">Đăng ký vân tay</button>
+        </form>
+        <div id="fingerprintMessage" class="mt-3 font-weight-bold"></div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('cameraPreview');
+    const captureVideo = document.getElementById('captureVideo');
+    const videoContainer = document.querySelector('.video-container');
+    const messageDiv = document.getElementById('message');
+    const message_cam = document.getElementById('message_cam');
+    let diemDangChay = false;
+    let intervalId = null;
+    let capturedImages = [];
+    let imageCount = 0;
+    let currentFacingMode = 'user';
+
+
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith('csrftoken=')) {
+                cookieValue = cookie.substring('csrftoken='.length, cookie.length);
+                break;
+            }
+        }
+        return cookieValue;
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const switchCameraBtn = document.getElementById('switchCamera');
+        if (switchCameraBtn) {
+            switchCameraBtn.addEventListener('click', function() {
+                const video = document.getElementById('captureVideo');
+                const message_cam = document.getElementById('message_cam');
+                if (!video) {
+                    console.error('Không tìm thấy phần tử video');
+                    message_cam.innerText = '❌ Không tìm thấy video element!';
+                    message_cam.style.color = 'red';
+                    return;
+                }
+            
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    video.srcObject = null; 
+                }
+            
+                let currentFacingMode = video.dataset.facingMode || 'user';
+                currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+                video.dataset.facingMode = currentFacingMode;
+            
+                navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: currentFacingMode
+                    }
+                })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.style.display = 'block'; 
+                    message_cam.innerText = `✅ Đã chuyển sang camera ${currentFacingMode === 'user' ? 'trước' : 'sau'}`;
+                    message_cam.style.color = 'green';
+                })
+                .catch(error => {
+                    console.error('Lỗi khi đổi camera:', error);
+                    message_cam.innerText = `❌ Lỗi khi đổi camera: ${error.message}`;
+                    message_cam.style.color = 'red';
+                });
+            });
+        }
+    });
+    function startCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            messageDiv.innerText = '❌ Trình duyệt không hỗ trợ camera hoặc cần chạy trên HTTPS!';
+            messageDiv.style.color = 'red';
+            console.error('navigator.mediaDevices:', navigator.mediaDevices);
+            console.error('Trình duyệt:', navigator.userAgent);
+            return;
+        }
+
+        navigator.mediaDevices.getUserMedia({
+            video: { 
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: currentFacingMode
+            }
+        })
+        .then(function(stream) {
+            video.srcObject = stream;
+            video.onloadedmetadata = function() {
+                video.style.display = 'block';
+                document.getElementById('startCamera').style.display = 'none';
+                document.getElementById('diemDanhButton').style.display = 'inline-block';
+            };
+        })
+        .catch(function(error) {
+            console.error('Lỗi khi mở camera:', error);
+            if (error.name === 'NotAllowedError') {
+                messageDiv.innerText = '❌ Vui lòng cấp quyền truy cập camera!';
+            } else if (error.name === 'NotFoundError') {
+                messageDiv.innerText = '❌ Không tìm thấy camera!';
+            } else {
+                messageDiv.innerText = '❌ Lỗi khi mở camera: ' + error.message;
+            }
+            messageDiv.style.color = 'red';
+        });
+    }
+
+    function clearLabels() {
+        const labels = document.querySelectorAll('.face-label, .face-box');
+        labels.forEach(label => label.remove());
+    }
+
+    function sendFrameToServer() {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = video.videoWidth;
+        tempCanvas.height = video.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        const imageData = tempCanvas.toDataURL('image/jpeg');
+        const formData = new FormData();
+        formData.append('image', imageData);
+
+        fetch("{% url 'mark_attendance' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            clearLabels();
+
+            if (data.labels && data.labels.length > 0) {
+                data.labels.forEach(detection => {
+                    const [x1, y1, x2, y2] = detection.box;
+                    const label = detection.label;
+
+                    const box = document.createElement('div');
+                    box.className = 'face-box';
+                    box.style.left = `${x1}px`;
+                    box.style.top = `${y1}px`;
+                    box.style.width = `${x2 - x1}px`;
+                    box.style.height = `${y2 - y1}px`;
+                    videoContainer.appendChild(box);
+
+                    const labelDiv = document.createElement('div');
+                    labelDiv.className = 'face-label';
+                    labelDiv.innerText = label;
+                    labelDiv.style.left = `${x1}px`;
+                    labelDiv.style.top = `${y1 - 25}px`;
+                    videoContainer.appendChild(labelDiv);
+                });
+            }
+
+            if (data.success) {
+                messageDiv.innerText = `✅ Đã điểm danh: ${data.name} (${data.mssv})`;
+                messageDiv.style.color = 'green';
+                loadDiemDanhList();
+            } else {
+                messageDiv.innerText = data.message || '⚠️ Đang chờ nhận diện...';
+                messageDiv.style.color = 'orange';
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi:', error);
+            messageDiv.innerText = '❌ Lỗi hệ thống!';
+            messageDiv.style.color = 'red';
+        });
+    }
+
+
+    window.addEventListener('beforeunload', () => {
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
+        if (captureVideo.srcObject) {
+            captureVideo.srcObject.getTracks().forEach(track => track.stop());
+        }
+        if (intervalId) {
+            clearInterval(intervalId);
+        }
+    });
+
+    function captureImage() {
+        if (imageCount >= 5) {
+            return;
+        }
+    
+        if (imageCount === 0 && !captureVideo.srcObject) {
+            navigator.mediaDevices.getUserMedia({
+                video: { 
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: currentFacingMode
+                }
+            })
+            .then(stream => {
+                captureVideo.srcObject = stream;
+                captureVideo.style.display = 'block';
+                message_cam.innerText = '✅ Camera đã mở!';
+                document.getElementById('switchCamera').style.display = 'block';
+                message_cam.style.color = 'green';
+            })
+            .catch(error => {
+                console.error('Lỗi khi mở camera', error);
+                message_cam.innerText = '❌ Lỗi khi mở camera!';
+                message_cam.style.color = 'red';
+            });
+        } 
+        else if (captureVideo.srcObject) {
+            takePhoto();
+        } 
+        else {
+            message_cam.innerText = '❌ Camera chưa sẵn sàng, nhấn lại để mở!';
+            message_cam.style.color = 'red';
+        }
+    }
+    
+    function takePhoto() {
+        const canvas = document.createElement("canvas");
+        canvas.width = captureVideo.videoWidth;
+        canvas.height = captureVideo.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(captureVideo, 0, 0, canvas.width, canvas.height);
+    
+        canvas.toBlob(blob => {
+            const file = new File([blob], `captured_${imageCount + 1}.jpg`, { type: "image/jpeg" });
+            capturedImages.push(file);
+            imageCount++;
+    
+            const imgElement = document.createElement("img");
+            imgElement.src = URL.createObjectURL(blob);
+            imgElement.style.width = "250px";
+            imgElement.classList.add("m-2");
+            document.getElementById("capturedImages").appendChild(imgElement);
+    
+            if (imageCount >= 5) {
+                captureVideo.srcObject.getTracks().forEach(track => track.stop());
+                captureVideo.style.display = 'none';
+                message_cam.innerText = '✅ Đã hoàn tất chụp ảnh!';
+                message_cam.style.color = 'green';
+            } else {
+                message_cam.innerText = `✅ Đã chụp ảnh ${imageCount}/5`;
+                message_cam.style.color = 'green';
+            }
+        }, "image/jpeg");
+    }
+    function addStudent() {
+        const formData = new FormData(document.getElementById('addStudentForm'));
+
+        if (capturedImages.length === 5) {
+            capturedImages.forEach((file, index) => {
+                formData.append(`images`, file);
+            });
+        }
+
+        fetch("{% url 'them_sv' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            message_cam.innerText = data.message || data.error;
+            message_cam.style.color = data.message ? 'green' : 'red';
+
+            if (data.message) {
+                document.getElementById("addStudentForm").reset();
+                document.getElementById("capturedImages").innerHTML = "";
+                capturedImages = [];
+                imageCount = 0;
+            }
+        })
+        .catch(error => console.error('Lỗi:', error));
+        loadDiemDanhList();
+    }
+
+    function addFolder() {
+        const folderInput = document.getElementById("folderInput");
+        const files = folderInput.files;
+        
+        console.log("Số file được chọn:", files.length);
+        if (files.length === 0) {
+            alert("Vui lòng chọn ít nhất một thư mục!");
+            return;
+        }
+    
+        let hasRelativePath = false;
+        for (let i = 0; i < files.length; i++) {
+            console.log("File:", files[i].name, "Relative Path:", files[i].webkitRelativePath);
+            if (files[i].webkitRelativePath && files[i].webkitRelativePath.trim() !== "") {
+                hasRelativePath = true;
+                break;
+            }
+        }
+    
+        if (!hasRelativePath) {
+            const folderMessageDiv = document.getElementById("folderMessage");
+            folderMessageDiv.innerText = "❌ Vui lòng chọn một thư mục chứa các thư mục con mssv_ten_lop!";
+            folderMessageDiv.style.color = "red";
+            return;
+        }
+    
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append("files[]", files[i]);
+            formData.append(`relative_paths[${i}]`, files[i].webkitRelativePath);
+        }
+    
+        fetch("{% url 'add_folder' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCSRFToken()
+            },
+            body: formData
+        })
+        .then(response => {
+            console.log("Response status:", response.status);
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(JSON.stringify(data));
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            const folderMessageDiv = document.getElementById("folderMessage");
+            folderMessageDiv.innerHTML = ""; 
+    
+            if (data.added && data.added.length > 0) {
+                const successHeader = document.createElement("p");
+                successHeader.innerText = `✅ Đã thêm thành công ${data.added.length} sinh viên:`;
+                successHeader.style.color = "green";
+                folderMessageDiv.appendChild(successHeader);
+    
+                const successList = document.createElement("ul");
+                data.added.forEach(student => {
+                    const listItem = document.createElement("li");
+                    listItem.innerText = `${student.mssv} - ${student.name} - ${student.lop}`;
+                    successList.appendChild(listItem);
+                });
+                folderMessageDiv.appendChild(successList);
+            }
+    
+            if (data.errors && data.errors.length > 0) {
+                const errorHeader = document.createElement("p");
+                errorHeader.innerText = `❌ Không thêm được ${data.errors.length} sinh viên:`;
+                errorHeader.style.color = "red";
+                folderMessageDiv.appendChild(errorHeader);
+    
+                const errorList = document.createElement("ul");
+                data.errors.forEach(error => {
+                    const listItem = document.createElement("li");
+                    listItem.innerText = error;
+                    errorList.appendChild(listItem);
+                });
+                folderMessageDiv.appendChild(errorList);
+            }
+    
+            if (data.message) {
+                const messagePara = document.createElement("p");
+                messagePara.innerText = data.message;
+                messagePara.style.color = "blue";
+                folderMessageDiv.appendChild(messagePara);
+                document.getElementById("addFolderForm").reset();
+            }
+    
+            if ((!data.added || data.added.length === 0) && (!data.errors || data.errors.length === 0) && !data.message) {
+                folderMessageDiv.innerText = "⚠️ Không có thay đổi nào được thực hiện.";
+                folderMessageDiv.style.color = "orange";
+            }
+        })
+        .catch(error => {
+            console.error("Lỗi:", error);
+            const folderMessageDiv = document.getElementById("folderMessage");
+            folderMessageDiv.innerHTML = ""; 
+    
+            const errorData = JSON.parse(error.message);
+            const errorHeader = document.createElement("p");
+            errorHeader.innerText = `❌ ${errorData.error || "Có lỗi xảy ra"}:`;
+            errorHeader.style.color = "red";
+            folderMessageDiv.appendChild(errorHeader);
+    
+            if (errorData.errors && errorData.errors.length > 0) {
+                const errorList = document.createElement("ul");
+                errorData.errors.forEach(error => {
+                    const listItem = document.createElement("li");
+                    listItem.innerText = error;
+                    errorList.appendChild(listItem);
+                });
+                folderMessageDiv.appendChild(errorList);
+            }
+        });
+    }
+
+    function manualOpen() {
+        const formData = new FormData(document.getElementById('manualOpenForm'));
+
+        fetch("{% url 'manual_open' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            const manualMessageDiv = document.getElementById('manualMessage');
+            manualMessageDiv.innerText = data.message || data.error;
+            manualMessageDiv.style.color = data.message ? 'green' : 'red';
+
+            if (data.message) {
+                loadDiemDanhList();
+                document.getElementById("manualOpenForm").reset();
+            }
+        })
+        .catch(error => console.error('Lỗi:', error));
+    }
+
+    function registerFingerprint() {
+        const mssv = document.getElementById('fingerprintMSSV').value;
+        const name = document.getElementById('fingerprintName').value;
+        const messageDiv = document.getElementById('fingerprintMessage');
+        const fingerprintPreview = document.getElementById('fingerprintPreview');
+
+        if (!mssv || !name) {
+            messageDiv.innerText = '⚠️ Vui lòng nhập đầy đủ MSSV và tên!';
+            messageDiv.style.color = 'orange';
+            return;
+        }
+
+        messageDiv.innerText = '🔍 Đang quét vân tay, vui lòng đặt ngón tay lên cảm biến...';
+        messageDiv.style.color = 'blue';
+        fingerprintPreview.style.display = 'none';
+
+        // First, enroll the fingerprint
+        fetch("{% url 'enroll_fingerprint' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // If enrollment is successful, register the fingerprint with student info
+                return fetch("{% url 'register_fingerprint' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({
+                        mssv: mssv,
+                        name: name,
+                        template: data.template
+                    })
+                });
+            } else {
+                throw new Error(data.message || 'Lỗi khi quét vân tay');
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageDiv.innerText = `✅ Đăng ký thành công cho ${data.name} (${data.mssv})`;
+                messageDiv.style.color = 'green';
+                if (data.fingerprint_image) {
+                    fingerprintPreview.src = data.fingerprint_image;
+                    fingerprintPreview.style.display = 'block';
+                }
+                document.getElementById('fingerprintForm').reset();
+            } else {
+                messageDiv.innerText = `❌ ${data.message}`;
+                messageDiv.style.color = 'red';
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi:', error);
+            messageDiv.innerText = `❌ ${error.message || 'Lỗi hệ thống khi đăng ký vân tay!'}`;
+            messageDiv.style.color = 'red';
+        });
+    }
+
+    // Thêm hàm kiểm tra trạng thái cảm biến
+    function checkSensorStatus() {
+        const statusDiv = document.getElementById('sensorStatus');
+        statusDiv.className = 'alert alert-info';
+        statusDiv.innerText = 'Đang kiểm tra trạng thái cảm biến...';
+
+        fetch("{% url 'check_fingerprint_sensor' %}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    statusDiv.className = 'alert alert-success';
+                    statusDiv.innerText = '✅ ' + data.message;
+                } else {
+                    statusDiv.className = 'alert alert-warning';
+                    statusDiv.innerHTML = '⚠️ ' + data.message + 
+                        '<br>Bạn vẫn có thể sử dụng các chức năng khác mà không cần cảm biến vân tay.';
+                    
+                    // Disable fingerprint registration button
+                    const fingerprintBtn = document.querySelector('#fingerprintForm button');
+                    if (fingerprintBtn) {
+                        fingerprintBtn.disabled = true;
+                        fingerprintBtn.title = 'Cảm biến vân tay không khả dụng';
+                        fingerprintBtn.classList.remove('btn-primary');
+                        fingerprintBtn.classList.add('btn-secondary');
+                    }
+                }
+            })
+            .catch(error => {
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.innerHTML = '❌ Lỗi khi kiểm tra cảm biến: ' + error + 
+                    '<br>Bạn vẫn có thể sử dụng các chức năng khác mà không cần cảm biến vân tay.';
+                
+                // Disable fingerprint registration button
+                const fingerprintBtn = document.querySelector('#fingerprintForm button');
+                if (fingerprintBtn) {
+                    fingerprintBtn.disabled = true;
+                    fingerprintBtn.title = 'Cảm biến vân tay không khả dụng';
+                    fingerprintBtn.classList.remove('btn-primary');
+                    fingerprintBtn.classList.add('btn-secondary');
+                }
+            });
+    }
+
+    // Kiểm tra trạng thái cảm biến khi trang được tải
+    document.addEventListener('DOMContentLoaded', function() {
+        checkSensorStatus();
+        // Kiểm tra lại mỗi 5 giây
+        setInterval(checkSensorStatus, 5000);
+    });
+</script>
+{% endblock main %}

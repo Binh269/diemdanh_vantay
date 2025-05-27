@@ -1,0 +1,190 @@
+﻿
+
+.data_phong_tb {
+    flex-direction: row;
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.phong {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 40px 20px 40px 20px;
+    padding: 20px;
+    width: 80%;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    flex-basis: 30%;
+    box-sizing: border-box;
+    height: 470px; 
+    overflow-y: auto;
+}
+
+    .phong:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+.button_phong {
+    width: 120px;
+    height: 50px; 
+    margin: 0px 10px;
+    border-radius: 7px;
+    background-color: #ff7043; 
+    color: #ffffff; 
+    border: none; 
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, background-color 0.3s ease;
+}
+
+    .button_phong:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        background-color: #eb5c2f;
+    }
+
+.button-add {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.form-label {
+    color: #1976d2; 
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.form-control {
+    border: 1px solid #bbdefb; 
+    padding: 8px;
+    border-radius: 4px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+    .form-control:focus {
+        border-color: #2196f3; 
+        box-shadow: 0 0 5px rgba(33, 150, 243, 0.5); 
+    }
+
+.btn-primary {
+    background-color: #29b6f6;
+    border-color: #29b6f6;
+    color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+    .btn-primary:hover {
+        background-color: #0288d1; 
+        border-color: #0277bd; 
+    }
+
+.thiet_bi_list {
+    margin-top: 15px;
+    border-top: 1px solid #64b5f6;
+    padding-top: 15px;
+    width: 100%;
+}
+
+.thietbi {
+
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    flex-direction: row;
+    align-items: center;
+}
+    .thietbi:not(:last-child) {
+        border-bottom: 1px solid #000; 
+        margin-bottom: 10px; 
+    }
+    .thietbi:first-child {
+        border-top: 1px solid #000; 
+    }
+
+
+
+.tt_thietbi{
+    width:70%;
+}
+
+.tb_nut {
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+}
+
+strong {
+    color: #ff8a65; 
+    font-size: 16px;
+}
+
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #bbdefb;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+select.form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 30px;
+    background-size: 12px;
+    background-color: #ffffff; 
+    border: 1px solid #2196f3; 
+}
+
+.change {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.jconfirm .jconfirm-box {
+    max-width: 600px; 
+}
+.button_tb {
+    width: 120px;
+    height: 50px;
+    margin:5px;
+    border-radius: 7px;
+    background-color: #43c4ff;
+    color: #ffffff;
+    border: none;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, background-color 0.3s ease;
+}
+
+    .button_tb:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        background-color: #2f40eb;
+    }

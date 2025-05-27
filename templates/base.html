@@ -1,0 +1,511 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock title %}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&display=swap">
+    <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/untitled.css' %}">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    /* Giữ nguyên style gốc */
+    body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+
+    #wrapper {
+        display: flex;
+        height: 100vh;
+        width: 100%;
+        position: relative;
+    }
+
+    .sidebar {
+        width: 250px;
+        flex-shrink: 0;
+        background: linear-gradient(to bottom, #4e73df, #224abe);
+        z-index: 1000;
+        transition: transform 0.3s ease;
+    }
+
+    #content-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-x: auto;
+        margin-left: 0;
+    }
+
+    #content {
+        flex: 1;
+        padding: 20px;
+    }
+
+    .topbar {
+        padding: 10px 20px;
+        margin: 0;
+    }
+
+    .sidebar .nav-link {
+        font-size: 1rem; /* Kích thước chữ mặc định trên desktop */
+        padding: 10px 15px;
+    }
+
+    .sidebar .nav-item .nav-link.active {
+        font-weight: 700; /* Giữ độ đậm cho mục active */
+    }
+.sidebar .nav-link svg, 
+ {
+    margin-right: 10px;
+}
+    /* Desktop adjustments */
+    @media (min-width: 769px) {
+        .sidebar {
+            position: static;
+            transform: translateX(0);
+        }
+
+        #content-wrapper {
+            margin-left: 0;
+        }
+
+        #wrapper {
+            flex-direction: row;
+        }
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+        .sidebar {
+            position: fixed;
+            height: 100vh;
+            transform: translateX(-100%);
+            top: 0;
+            left: 0;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+            width: 220px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #content-wrapper {
+            margin-left: 0;
+        }
+
+        #sidebarToggleTop {
+            display: block !important;
+        }
+
+        .navbar-nav {
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .sidebar .nav-link {
+            font-size: 1.5rem; /* Tăng lên 24px trên mobile */
+            padding: 12px 15px;
+        }
+        .sidebar .nav-item .nav-link {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            font-size: large;
+        }
+        .sidebar .nav-item .nav-link.active {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        svg:not(:host).svg-inline--fa, svg:not(:root).svg-inline--fa {
+            overflow: visible;
+            box-sizing: content-box;
+            margin-right: 10px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .sidebar.active {
+            width: 200px;
+        }
+
+        #content {
+            padding: 10px;
+        }
+
+        .topbar {
+            padding: 5px 10px;
+        }
+
+        .sidebar .nav-link {
+            font-size: 1.4rem; /* 22.4px */
+            padding: 10px 12px;
+        }
+        .sidebar .nav-item .nav-link {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            font-size: large;
+        }
+        .sidebar .nav-item .nav-link.active {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        svg:not(:host).svg-inline--fa, svg:not(:root).svg-inline--fa {
+            overflow: visible;
+            box-sizing: content-box;
+            margin-right: 10px;
+        }
+    }
+
+    @media (max-width: 414px) { /* iPhone X */
+        .sidebar.active {
+            width: 180px;
+        }
+
+        .sidebar .nav-link {
+            font-size: 1.3rem; /* 20.8px */
+            padding: 9px 10px;
+        }
+        .sidebar .nav-item .nav-link {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            font-size: large;
+        }
+        .sidebar .nav-item .nav-link.active {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        svg:not(:host).svg-inline--fa, svg:not(:root).svg-inline--fa {
+            overflow: visible;
+            box-sizing: content-box;
+            margin-right: 10px;
+        }
+    }
+
+    @media (max-width: 360px) { /* Galaxy S5 */
+        .sidebar.active {
+            width: 170px;
+        }
+
+        .sidebar .nav-link {
+            font-size: 1.25rem; /* 20px */
+            padding: 8px 10px;
+        }
+        .sidebar .nav-item .nav-link {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            font-size: large;
+        }
+        .sidebar .nav-item .nav-link.active {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        svg:not(:host).svg-inline--fa, svg:not(:root).svg-inline--fa {
+            overflow: visible;
+            box-sizing: content-box;
+            margin-right: 10px;
+        }
+    }
+
+    @media (max-width: 320px) { /* iPhone 5 */
+        .sidebar.active {
+            width: 160px;
+        }
+
+        .sidebar .nav-link {
+            font-size: 1.2rem; /* 19.2px */
+            padding: 7px 8px;
+        }
+        .sidebar .nav-item .nav-link {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            font-size: large;
+        }
+        .sidebar .nav-item .nav-link.active {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        svg:not(:host).svg-inline--fa, svg:not(:root).svg-inline--fa {
+            overflow: visible;
+            box-sizing: content-box;
+            margin-right: 10px;
+        }
+    }
+</style>
+
+<body id="page-top">
+    <div id="wrapper">
+        <nav class="navbar align-items-start sidebar sidebar-dark accordion bg-gradient-primary p-0 navbar-dark">
+            <div class="container-fluid d-flex flex-column p-0">
+                <a class="navbar-brand d-flex justify-content-center align-items-center sidebar-brand m-0" href="#">
+                    <div class="sidebar-brand-icon rotate-n-15"><i class="fas fa-laugh-wink"></i></div>
+                    <div class="sidebar-brand-text mx-3"><span>BOSS</span></div>
+                </a>
+                <hr class="sidebar-divider my-0">
+                <ul class="navbar-nav text-light" id="accordionSidebar">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'thongke' %}">
+                            <i class="fa-solid fa-house"></i>
+                            <span> Trang chủ</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'diemdanh' %}">
+                            <i class="far fa-edit"></i>
+                            <span>Điểm Danh</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'lich_view' %}">
+                            <i class="fas fa-table"></i>
+                            <span>Lịch Và Sinh Viên</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'ql_sv' %}">
+                            <i class="far fa-building"></i>
+                            <span>Thêm Sinh Viên</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'setting' %}">
+                            <i class="far fa-building"></i>
+                            <span>Setting</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'update_profile' %}">
+                            <i class="fas fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'logout' %}">
+                            <i class="fas fa-user"></i>
+                            <span>Đăng xuất</span>
+                        </a>
+                    </li>
+                    <li class="nav-item"></li>
+                </ul>
+                <div class="text-center d-none d-md-inline">
+                    <button class="btn rounded-circle border-0" id="sidebarToggle" type="button"></button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="d-flex flex-column" id="content-wrapper">
+            <div id="content">
+                <nav class="navbar navbar-expand bg-white shadow mb-4 topbar">
+                    <div class="container-fluid">
+                        <button class="btn btn-link d-md-none rounded-circle me-3" id="sidebarToggleTop" type="button">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <form class="d-none d-sm-inline-block me-auto ms-md-3 my-2 my-md-0 mw-100 navbar-search"></form>
+                        <ul class="navbar-nav flex-nowrap ms-auto">
+                            {% comment %} <li class="nav-item dropdown d-sm-none no-arrow">
+                                <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
+                                    <i class="fas fa-search"></i>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end p-3 animated--grow-in" aria-labelledby="searchDropdown">
+                                    <form class="me-auto navbar-search w-100">
+                                        <div class="input-group">
+                                            <input class="bg-light border-0 form-control small" type="text" placeholder="Search for ...">
+                                            <button class="btn btn-primary" type="button">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </li>
+                            <li class="nav-item dropdown no-arrow mx-1">
+                                <div class="nav-item dropdown no-arrow">
+                                    <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
+                                        <span class="badge bg-danger badge-counter">3+</span>
+                                        <i class="fas fa-bell fa-fw"></i>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end dropdown-list animated--grow-in">
+                                        <h6 class="dropdown-header">alerts center</h6>
+                                        <a class="dropdown-item d-flex align-items-center" href="#">
+                                            <div class="me-3">
+                                                <div class="bg-primary icon-circle"><i class="fas fa-file-alt text-white"></i></div>
+                                            </div>
+                                            <div>
+                                                <span class="small text-gray-500">December 12, 2019</span>
+                                                <p>A new monthly report is ready to download!</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="nav-item dropdown no-arrow mx-1">
+                                <div class="nav-item dropdown no-arrow">
+                                    <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
+                                        <span class="badge bg-danger badge-counter">7</span>
+                                        <i class="fas fa-envelope fa-fw"></i>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end dropdown-list animated--grow-in">
+                                    </div>
+                                </div>
+                            </li> {% endcomment %}
+                            <div class="d-none d-sm-block topbar-divider"></div>
+                            {% comment %} <li class="nav-item dropdown no-arrow">
+                                <div class="nav-item dropdown no-arrow">
+                                    <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
+                                        <span class="d-none d-lg-inline me-2 text-gray-600 small">Đỗ Thanh Bình</span>
+                                        <img class="border rounded-circle img-profile" src="{% static 'assets/img/avatars/avatar1.jpeg' %}">
+                                    </a>
+                                    <div class="dropdown-menu shadow dropdown-menu-end animated--grow-in">
+                                        <a class="dropdown-item" href="#">
+                                            <i class="fas fa-user fa-sm fa-fw me-2 text-gray-400"></i> Profile
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="fas fa-sign-out-alt fa-sm fa-fw me-2 text-gray-400"></i> Logout
+                                        </a>
+                                    </div>
+                                </div>
+                            </li> {% endcomment %}
+                            <li class="nav-item dropdown no-arrow">
+                                <div class="nav-item dropdown no-arrow">
+                                    <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
+                                        <span class="d-none d-lg-inline me-2 text-gray-600 small">
+                                            {% if user.is_authenticated %}
+                                                {{ user.last_name|default:user.username }}
+                                            {% else %}
+                                                Khách
+                                            {% endif %}
+                                        </span>
+                                        <img class="border rounded-circle img-profile" src="{% static 'assets/img/avatars/avatar1.jpeg' %}">
+                                    </a>
+                                    <div class="dropdown-menu shadow dropdown-menu-end animated--grow-in">
+                                        <a class="dropdown-item" href="{% url 'update_profile' %}">
+                                            <i class="fas fa-user fa-sm fa-fw me-2 text-gray-400"></i> Profile
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="{% url 'logout' %}">
+                                            <i class="fas fa-sign-out-alt fa-sm fa-fw me-2 text-gray-400"></i> Logout
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                {% block main %}{% endblock main %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{% static 'assets/bootstrap/js/bootstrap.min.js' %}"></script>
+
+    <script>
+        const Toast = Swal.mixin({
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
+
+        {% if messages %}
+            {% for mess in messages %}
+                {% if mess.tags == 'success' %}
+                    Toast.fire({
+                        icon: 'success',
+                        title: '{{ mess }}'
+                    });
+                {% elif mess.tags == 'error' %}
+                    Toast.fire({
+                        icon: 'error',
+                        title: '{{ mess }}'
+                    });
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        // Điều khiển sidebar
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggleTop');
+        const contentWrapper = document.getElementById('content-wrapper');
+
+        // Toggle sidebar khi nhấn nút
+        sidebarToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('active');
+        });
+
+        // Ẩn sidebar khi nhấn ra ngoài trên mobile
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target) && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                }
+            }
+        });
+
+        // Đảm bảo sidebar không active trên desktop khi resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768 && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+            }
+        });
+
+        {% comment %} function checkSession() {
+            fetch('/check-session/', {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'  // Đảm bảo gửi CSRF token
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.is_authenticated) {
+                    alert('Tài khoản của bạn đã được đăng nhập trên thiết bị khác. Vui lòng đăng nhập lại!');
+                    window.location.href = '/login/';  // Chuyển hướng về trang login
+                }
+            })
+            .catch(error => console.error('Lỗi kiểm tra session:', error));
+        }
+        
+        setInterval(checkSession, 5000); {% endcomment %}
+
+    </script>
+</body>
+</html>
